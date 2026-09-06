@@ -43,6 +43,7 @@ import {
   walletDetected,
   type DiagnosticsReport,
 } from './diagnostics.js';
+import { logoElement } from './logo.js';
 import './style.css';
 
 /* ----------------------------- app state ----------------------------- */
@@ -203,9 +204,27 @@ function appFooter(): HTMLElement {
     // Also on the onboarding screen, but that is only ever seen once. Anyone
     // already signed in had no way to reach diagnostics from inside the app,
     // which is exactly the context the wallet checks need to run in.
-    el('span', { class: 'sep' }, ' · '),
-    diagnosticsLink(),
+    ...(diagnosticsEnabled() ? [el('span', { class: 'sep' }, ' · '), diagnosticsLink()] : []),
   );
+}
+
+/**
+ * Diagnostics are hidden unless explicitly switched on.
+ *
+ * They are a developer tool, not a feature, and had no business appearing in
+ * the footer of every screen for every user. Open the app once with ?diag=1 to
+ * enable them on that device; ?diag=0 turns them off again. The probe itself is
+ * unchanged — this only controls whether the link is visible.
+ */
+function diagnosticsEnabled(): boolean {
+  try {
+    const flag = new URLSearchParams(location.search).get('diag');
+    if (flag === '1') localStorage.setItem('chore-circle:diag', '1');
+    if (flag === '0') localStorage.removeItem('chore-circle:diag');
+    return localStorage.getItem('chore-circle:diag') === '1';
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -275,6 +294,7 @@ function diagnosticsSheet() {
 function renderOnboarding(): HTMLElement {
   const wrap = el('div', { class: 'card center' });
   wrap.append(
+    el('div', { class: 'brand brand-lg' }, logoElement(56)),
     el('h1', {}, 'Chore Circle'),
     el(
       'p',
@@ -313,14 +333,11 @@ function renderOnboarding(): HTMLElement {
     );
   }
 
-  // Reachable without relying on the Nimiq Pay deeplink accepting a path.
-  wrap.append(
-    el(
-      'p',
-      { class: 'muted small', style: 'margin-top:14px' },
-      el('a', { href: '/diag', class: 'muted' }, 'Run capability diagnostics'),
-    ),
-  );
+  if (diagnosticsEnabled()) {
+    wrap.append(
+      el('p', { class: 'muted small', style: 'margin-top:14px' }, diagnosticsLink()),
+    );
+  }
 
   return wrap;
 }
@@ -328,7 +345,10 @@ function renderOnboarding(): HTMLElement {
 /* -------------------------------- chores ----------------------------- */
 
 function taskCard(task: Task): HTMLElement {
-  const card = el('div', { class: 'card task' });
+  // Where a chore spans several circles the first is used; the edge is a hint
+  // about origin, not a claim of exclusivity.
+  const kind = state.circles.find((c) => task.circleIds.includes(c.id))?.kind;
+  const card = el('div', { class: 'card task' + (kind ? ' from-' + kind : '') });
   const mine = task.posterId === state.userId;
   const isDoer = task.doerId === state.userId;
 
@@ -434,7 +454,12 @@ function renderChores(): HTMLElement {
   for (const option of options) {
     const chip = el(
       'button',
-      { class: 'chip' + (state.filter === option ? ' on' : '') },
+      {
+        class:
+          'chip' +
+          (state.filter === option ? ' on' : '') +
+          (option === 'all' ? '' : ' kind kind-' + option),
+      },
       option === 'all' ? 'All' : KIND_LABEL[option],
     );
     chip.onclick = () => {
@@ -615,7 +640,7 @@ function renderCircles(): HTMLElement {
     const card = el('div', { class: 'card' });
     card.append(
       el('div', { class: 'row' },
-        el('span', { class: 'pill' }, KIND_LABEL[circle.kind]),
+        el('span', { class: 'pill kind-' + circle.kind }, KIND_LABEL[circle.kind]),
         el('span', { class: 'muted small' }, circle.memberCount + ' member' + (circle.memberCount === 1 ? '' : 's')),
       ),
       el('h3', {}, circle.name),
@@ -937,7 +962,7 @@ function render() {
   };
 
   const header = el('header', {},
-    el('h1', {}, 'Chore Circle'),
+    el('div', { class: 'brand' }, logoElement(24), el('h1', {}, 'Chore Circle')),
     el('div', { class: 'row', style: 'gap:10px' },
       el('span', { class: 'muted small' }, wallet.isReal ? 'Nimiq Pay' : 'Mock wallet'),
       currencySelect,

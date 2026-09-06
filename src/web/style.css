@@ -11,6 +11,14 @@
   --accent-ink: #ffffff;
   --danger: #d2384a;
   --ok: #0f9d63;
+
+  /* Circle identity. The teal accent is ~166deg; amber (~35deg) and indigo
+     (~245deg) sit roughly a third of the wheel away in each direction, so the
+     three read as a set and stay distinguishable to most colour-blind viewers,
+     who separate warm from cool more reliably than red from green. */
+  --family: #00b78a;
+  --friends: #d98324;
+  --community: #5b5bd6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,6 +28,11 @@
     --ink: #eceef2;
     --muted: #9aa3b2;
     --line: #272b33;
+
+    /* Lifted for contrast against the dark ground; the same three hues. */
+    --family: #2ad4a8;
+    --friends: #f0a955;
+    --community: #8b8bf0;
   }
 }
 
@@ -286,3 +299,35 @@ textarea { min-height: 76px; resize: vertical; }
 .diag-banner.bad { background: var(--danger); }
 .diag-out { background: var(--bg); border:1px solid var(--line); border-radius:10px;
   padding:10px; font-size:11px; line-height:1.4; overflow-x:auto; max-height:320px; }
+
+/* Circle kinds, colour-coded. Each pill carries its own hue as a tint so the
+   type is readable at a glance without adding another word to the label. */
+.pill.kind-family    { background: color-mix(in srgb, var(--family) 16%, transparent);    color: var(--family); }
+.pill.kind-friends   { background: color-mix(in srgb, var(--friends) 18%, transparent);   color: var(--friends); }
+.pill.kind-community { background: color-mix(in srgb, var(--community) 16%, transparent); color: var(--community); }
+
+/* Filter chips get a small dot rather than a full tint — selection state is
+   already carried by the fill, and two competing signals would be noise. */
+.chip.kind::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: currentColor;
+}
+.chip.kind-family::before    { background: var(--family); }
+.chip.kind-friends::before   { background: var(--friends); }
+.chip.kind-community::before { background: var(--community); }
+
+/* A thin edge on the card ties a chore back to the circle it came from. */
+.card.task.from-family    { border-left: 3px solid var(--family); }
+.card.task.from-friends   { border-left: 3px solid var(--friends); }
+.card.task.from-community { border-left: 3px solid var(--community); }
+
+.brand { display: flex; align-items: center; gap: 9px; }
+.brand h1 { margin: 0; }
+.brand-lg { justify-content: center; margin-bottom: 10px; }
+.logo { display: inline-flex; line-height: 0; color: var(--ink); }
