@@ -309,6 +309,22 @@ export function createApi() {
     return c.json({ settled });
   });
 
+  /**
+   * Receive a diagnostics run from a phone.
+   *
+   * Unauthenticated on purpose: the reporting device has no session, and this
+   * is a development aid on a throwaway host. Payload is capped so it cannot be
+   * used as free storage. Remove this and /diag/results before production.
+   */
+  api.post('/diag', async (c) => {
+    const text = await c.req.text();
+    if (text.length > 20000) throw bad('Diagnostics payload too large');
+    await c.env.DB.prepare('INSERT INTO diagnostics (id, at, payload) VALUES (?, ?, ?)')
+      .bind(uuid(), Date.now(), text)
+      .run();
+    return c.json({ ok: true });
+  });
+
   api.onError((err, c) => {
     const status = (err as { httpStatus?: number }).httpStatus ?? 500;
     if (status >= 500) console.error(err);

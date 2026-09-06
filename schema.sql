@@ -3,6 +3,7 @@
 -- The events table is the source of truth: task state is a projection over it,
 -- never a stored row. Users, circles and memberships are ordinary records.
 
+DROP TABLE IF EXISTS diagnostics;
 DROP TABLE IF EXISTS task_circles;
 DROP TABLE IF EXISTS events;
 DROP TABLE IF EXISTS memberships;
@@ -65,3 +66,12 @@ CREATE INDEX idx_events_actor ON events(actor_id);
 CREATE INDEX idx_task_circles_circle ON task_circles(circle_id);
 CREATE INDEX idx_memberships_user ON memberships(user_id);
 CREATE INDEX idx_circles_code ON circles(invite_code);
+
+-- Development aid: lets a phone hand its capability report to a desktop browser.
+-- Nothing depends on it. Drop the table and the two routes before production.
+CREATE TABLE diagnostics (
+  id      TEXT PRIMARY KEY,
+  at      INTEGER NOT NULL,
+  payload TEXT NOT NULL
+);
+CREATE INDEX idx_diagnostics_at ON diagnostics(at);

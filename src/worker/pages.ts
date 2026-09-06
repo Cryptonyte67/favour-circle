@@ -182,6 +182,48 @@ approved, get paid straight to your wallet.</p>
   });
 
   /**
+   * Diagnostics runs, newest first — read this on a desktop.
+   *
+   * The phone cannot easily paste out of a WebView, so it posts its report here
+   * and the results are collected on a machine that can copy. Development aid;
+   * remove alongside POST /api/diag before production.
+   */
+  pages.get('/diag/results', async (c) => {
+    const rows = await c.env.DB.prepare(
+      'SELECT id, at, payload FROM diagnostics ORDER BY at DESC LIMIT 10',
+    ).all<{ id: string; at: number; payload: string }>();
+
+    const blocks = rows.results.length
+      ? rows.results
+          .map((r) => {
+            let pretty = r.payload;
+            try { pretty = JSON.stringify(JSON.parse(r.payload), null, 2); } catch { /* raw */ }
+            const when = new Date(r.at).toISOString().replace('T', ' ').slice(0, 19);
+            return '<h2>' + when + ' UTC</h2><pre>' + pretty.replace(/</g, '&lt;') + '</pre>';
+          })
+          .join('')
+      : '<p>Nothing received yet. Run the diagnostics on your phone and tap ' +
+        '<b>Send to my computer</b>.</p>';
+
+    return c.html([
+      '<!doctype html><html lang="en"><head><meta charset="utf-8">',
+      '<meta name="viewport" content="width=device-width, initial-scale=1">',
+      '<title>Diagnostics results</title>',
+      '<style>',
+      ':root{color-scheme:light dark}',
+      'body{margin:0;padding:24px;font:15px/1.5 system-ui,-apple-system,sans-serif;max-width:780px}',
+      'h1{font-size:20px;margin:0 0 4px}',
+      'h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;opacity:.55;margin:26px 0 6px}',
+      'pre{background:rgba(128,128,128,.12);padding:14px;border-radius:10px;overflow-x:auto;font-size:12.5px}',
+      '</style></head><body>',
+      '<h1>Diagnostics results</h1>',
+      '<p style="opacity:.65;margin:0 0 8px">Newest first. Select a block and copy it.</p>',
+      blocks,
+      '</body></html>',
+    ].join(''));
+  });
+
+  /**
    * Launcher, for opening this app inside Nimiq Pay during development.
    *
    * The documented HTTPS deeplink (nimpay.app/miniapps/open/...) is an iOS
@@ -360,8 +402,13 @@ converts or has access to your money — payments go straight between wallets.</
     border:1px solid rgba(128,128,128,.4); border-radius:10px; background:transparent; color:inherit;
     text-align:center; text-decoration:none; }
   pre { background:rgba(128,128,128,.12); padding:10px; border-radius:8px; overflow-x:auto; font-size:12px; }
+  #context { padding:14px; border-radius:10px; margin:12px 0 4px; font-weight:700; }
+  #context.good { background:#0a7; color:#fff; }
+  #context.bad { background:#c33; color:#fff; }
+  #context small { display:block; font-weight:400; opacity:.9; margin-top:4px; }
 </style></head><body>
 <h1>Chore Circle diagnostics</h1>
+<div id="context"></div>
 <p style="opacity:.7;margin:0">Open this inside Nimiq Pay, tap every button, then Copy results.</p>
 
 <h2>Passive checks</h2><div id="passive"></div>
@@ -377,6 +424,8 @@ converts or has access to your money — payments go straight between wallets.</
 <h2>Results</h2>
 <pre id="log">(nothing yet)</pre>
 <button id="b-copy">Copy results</button>
+<button id="b-send">Send to my computer</button>
+<p id="sent" style="opacity:.7;font-size:13px"></p>
 
 <script>
 var results = {};
@@ -390,6 +439,32 @@ function draw(){ document.getElementById('log').textContent = JSON.stringify(res
 function row(host,k,v){ var cls = v===true?'yes':v===false?'no':'idk';
   var t = v===true?'yes':v===false?'no':String(v);
   host.insertAdjacentHTML('beforeend','<div class="row"><span class="k">'+k+'</span><span class="v '+cls+'">'+t+'</span></div>'); }
+
+// A WKWebView omits "Version/" and "Safari/" from its user agent; mobile
+// Safari includes both. Combined with whether a wallet was injected, that is
+// enough to tell someone plainly whether they are in the right place — running
+// this in Safari looks identical to a broken wallet otherwise.
+(function(){
+  var box = document.getElementById('context');
+  var ua = navigator.userAgent;
+  var looksLikeSafari = ua.indexOf('Version/') >= 0 && ua.indexOf('Safari/') >= 0;
+  var hasWallet = !!(window.nimiq || window.ethereum);
+  if (hasWallet) {
+    box.className = 'good';
+    box.innerHTML = 'Running inside Nimiq Pay &mdash; wallet detected.' +
+      '<small>This is the run that matters. Tap every button below.</small>';
+  } else if (looksLikeSafari) {
+    box.className = 'bad';
+    box.innerHTML = 'This is Safari, not Nimiq Pay.' +
+      '<small>No wallet here, so the wallet tests cannot answer anything. ' +
+      'Open Chore Circle inside Nimiq Pay and tap "Run capability diagnostics".</small>';
+  } else {
+    box.className = 'bad';
+    box.innerHTML = 'No wallet detected.' +
+      '<small>Either this is not Nimiq Pay, or it injected nothing. ' +
+      'The user agent below will tell us which.</small>';
+  }
+})();
 
 var p = document.getElementById('passive');
 results.userAgent = navigator.userAgent;
@@ -475,6 +550,16 @@ document.getElementById('b-sign').onclick = function(){
     }).then(function(s){ set('signature', { via:'ethereum', value: String(s).slice(0,300) }); })
       .catch(function(e){ set('signature','ERR ' + e.message); });
   } else { set('signature','no signing method'); }
+};
+document.getElementById('b-send').onclick = function(){
+  var el = document.getElementById('sent');
+  el.textContent = 'Sending...';
+  fetch('/api/diag', { method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(results) })
+    .then(function(r){ el.textContent = r.ok
+      ? 'Sent. Open /diag/results on your computer.'
+      : 'Failed: HTTP ' + r.status; })
+    .catch(function(e){ el.textContent = 'Failed: ' + e.message; });
 };
 document.getElementById('b-copy').onclick = function(){
   var text = JSON.stringify(results,null,2);

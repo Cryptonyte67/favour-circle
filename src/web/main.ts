@@ -33,6 +33,16 @@ import {
   CURRENCIES,
   type Currency,
 } from './prices.js';
+import {
+  passiveReport,
+  probeClipboard,
+  probePriceApi,
+  probeShare,
+  probeWallet,
+  sendReport,
+  walletDetected,
+  type DiagnosticsReport,
+} from './diagnostics.js';
 import './style.css';
 
 /* ----------------------------- app state ----------------------------- */
@@ -190,7 +200,74 @@ function appFooter(): HTMLElement {
       { href: '/help/cash-out', class: 'muted' },
       'New to crypto? What your earnings are and what to do with them',
     ),
+    // Also on the onboarding screen, but that is only ever seen once. Anyone
+    // already signed in had no way to reach diagnostics from inside the app,
+    // which is exactly the context the wallet checks need to run in.
+    el('span', { class: 'sep' }, ' · '),
+    diagnosticsLink(),
   );
+}
+
+/**
+ * Opens the probe in a sheet rather than navigating.
+ *
+ * Nimiq Pay's WebView hands link taps to Safari, so the standalone /diag page
+ * could never measure the app's own context — it always reported "no wallet"
+ * because Safari has none.
+ */
+function diagnosticsLink(): HTMLElement {
+  const link = el('a', { href: '#', class: 'muted' }, 'Diagnostics');
+  link.onclick = (e) => {
+    e.preventDefault();
+    diagnosticsSheet();
+  };
+  return link;
+}
+
+function diagnosticsSheet() {
+  const body = el('div', {});
+  const report: DiagnosticsReport = passiveReport();
+
+  const banner = el(
+    'div',
+    { class: 'diag-banner ' + (walletDetected() ? 'good' : 'bad') },
+    walletDetected()
+      ? 'Wallet detected — this run counts.'
+      : 'No wallet injected here. If this is Nimiq Pay, it exposed nothing.',
+  );
+
+  const out = el('pre', { class: 'diag-out' }, JSON.stringify(report, null, 2));
+  const redraw = () => {
+    out.textContent = JSON.stringify(report, null, 2);
+  };
+
+  const run = (label: string, key: string, fn: () => Promise<unknown>) => {
+    const button = el('button', { class: 'ghost' }, label);
+    button.onclick = async () => {
+      button.textContent = label + '…';
+      report[key] = await fn();
+      redraw();
+      button.textContent = label + ' ✓';
+    };
+    body.append(button);
+  };
+
+  body.append(banner, el('p', { class: 'note' }, 'Tap each check, then send.'));
+
+  run('Wallet: accounts + signature', 'wallet', () => probeWallet(wallet));
+  run('Price API', 'priceApi', probePriceApi);
+  run('Clipboard', 'clipboard', probeClipboard);
+  run('Share sheet', 'share', probeShare);
+
+  const status = el('p', { class: 'muted small' }, '');
+  const send = el('button', { class: 'primary' }, 'Send to my computer');
+  send.onclick = async () => {
+    status.textContent = 'Sending…';
+    status.textContent = await sendReport(report);
+  };
+
+  body.append(send, status, out);
+  openSheet('Diagnostics', body);
 }
 
 /* ------------------------------ onboarding --------------------------- */

@@ -280,3 +280,9 @@ textarea { min-height: 76px; resize: vertical; }
 
 .app-footer { margin-top: 28px; padding: 0 8px; line-height: 1.5; }
 .app-footer a { text-decoration: underline; text-underline-offset: 2px; }
+
+.diag-banner { padding:12px 14px; border-radius:10px; font-weight:650; font-size:14px; color:#fff; }
+.diag-banner.good { background: var(--ok); }
+.diag-banner.bad { background: var(--danger); }
+.diag-out { background: var(--bg); border:1px solid var(--line); border-radius:10px;
+  padding:10px; font-size:11px; line-height:1.4; overflow-x:auto; max-height:320px; }
