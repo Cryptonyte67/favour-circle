@@ -4,7 +4,7 @@
  * The three arcs are the three circle kinds in their own colours — family,
  * friends, community — so the logo is built from the same palette the app uses
  * to tell them apart, rather than being decoration bolted on beside it. The
- * ring is the "circle"; the tick is a chore done.
+ * ring is the "circle"; the tick is a favour done.
  *
  * Drawn with strokes and a single path so it stays legible at 20px in a header
  * and at 512px as a submission icon, with no raster assets to keep in sync.
@@ -38,7 +38,7 @@ export function logoSvg(options: LogoOptions = {}): string {
     : '';
 
   return `<svg viewBox="0 0 64 64" width="${size}" height="${size}" fill="none"
-  xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Chore Circle">
+  xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Favour Circle">
   ${bg}
   <g stroke-width="6" stroke-linecap="round" stroke-dasharray="${dash}">
     <circle cx="32" cy="32" r="27" stroke="${a}" transform="rotate(-90 32 32)"/>

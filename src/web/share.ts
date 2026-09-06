@@ -139,7 +139,7 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-/** QR is the one route that cannot fail, and chores are usually assigned in person. */
+/** QR is the one route that cannot fail, and favours are usually assigned in person. */
 export async function qrDataUrl(text: string): Promise<string> {
   return QRCode.toDataURL(text, {
     width: 240,

@@ -9,7 +9,7 @@
  *  2. **It can never break the app.** This is a network call inside a WebView
  *     that may not permit outbound fetches at all. Every failure path returns
  *     null and the UI carries on. Reliability is 45 points; a price API must
- *     never be able to stop a chore from rendering.
+ *     never be able to stop a favour from rendering.
  *  3. **Failure is visible, not silent.** A blocked fetch used to render an
  *     empty space, which is indistinguishable from having no feature at all —
  *     and that is exactly how it got reported. `ratesAreUnavailable()` lets the
@@ -20,7 +20,7 @@ import { ASSETS } from '../shared/types.js';
 import { formatUnits } from '../shared/money.js';
 
 const ENDPOINT = 'https://api.coingecko.com/api/v3/simple/price';
-const CACHE_KEY = 'chore-circle:rates';
+const CACHE_KEY = 'favour-circle:rates';
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
 /** CoinGecko ids for the assets we price. */
@@ -62,7 +62,7 @@ export function detectCurrency(): Currency {
 
 function readStoredCurrency(): Currency | null {
   try {
-    const value = localStorage.getItem('chore-circle:currency');
+    const value = localStorage.getItem('favour-circle:currency');
     return CURRENCIES.includes(value as Currency) ? (value as Currency) : null;
   } catch {
     return null;
@@ -71,7 +71,7 @@ function readStoredCurrency(): Currency | null {
 
 export function storeCurrency(currency: Currency): void {
   try {
-    localStorage.setItem('chore-circle:currency', currency);
+    localStorage.setItem('favour-circle:currency', currency);
   } catch {
     // Not important enough to surface.
   }
@@ -170,7 +170,7 @@ export function rateFor(assetKey: string, currency: Currency): number | null {
  * Convert an amount typed in fiat into a decimal amount of `assetKey`.
  *
  * Returns a string with exactly the asset's precision, ready for parseDecimal.
- * The chore is still denominated in crypto — this only decides the number. The
+ * The favour is still denominated in crypto — this only decides the number. The
  * rate at settlement will differ from the rate now, which is why fiat entry is
  * pinned to a stablecoin rather than to NIM.
  */

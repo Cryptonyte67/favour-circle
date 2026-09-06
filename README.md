@@ -1,4 +1,4 @@
-# Chore Circle
+# Favour Circle
 
 Post a small job to your **family**, **friends** or **neighbours**. They do it,
 you approve, they get paid — straight to their wallet, in one tap.
@@ -9,8 +9,8 @@ A Mini App for [Nimiq Pay](https://nimiq.dev/mini-apps/).
 
 ## Why payment is the app, not a button on it
 
-A chore board without settlement is a to-do list. The thing that makes this work
-is that approving a chore and paying for it are the same gesture. Nimiq Pay makes
+A favour board without settlement is a to-do list. The thing that makes this work
+is that approving a favour and paying for it are the same gesture. Nimiq Pay makes
 sub-cent transfers viable at 0% platform fee, so "$2 to take the bins out" is a
 real transaction instead of an IOU somebody settles later, somewhere else.
 
@@ -27,29 +27,29 @@ history available later at no cost now.
 ## Batched settlement
 
 Nimiq Pay raises a **native confirmation dialog for every payment**. One dialog
-per chore would make the app unusable.
+per favour would make the app unusable.
 
-So approved chores accumulate into one bucket per `(poster, doer, asset)`. Ten
-approved chores settle as **one payment and one dialog**. This is the single most
+So approved favours accumulate into one bucket per `(poster, doer, asset)`. Ten
+approved favours settle as **one payment and one dialog**. This is the single most
 important design decision in the codebase — see `owedBuckets()` in
 `src/shared/events.ts`.
 
 ## Who gets paid
 
-Each person registers a payout address **per chain**, so a NIM chore resolves to
-their Nimiq address and a USDT chore would resolve to their EVM one. Owed buckets
+Each person registers a payout address **per chain**, so a NIM favour resolves to
+their Nimiq address and a USDT favour would resolve to their EVM one. Owed buckets
 carry that resolved address; if the doer has none, the bucket says so and offers
 no button rather than paying the wrong wallet.
 
 The client picks the address, and then **the server re-derives it and rejects any
-mismatch**. Without that check a bug or a tampered client could mark chores paid
+mismatch**. Without that check a bug or a tampered client could mark favours paid
 while the money went somewhere else — which is exactly the shape of bug that is
 invisible until someone is out of pocket.
 
 ## Circles, not a public board
 
-Chores are posted to circles you choose, typed `family` / `friends` /
-`community`, and a chore can go to several at once.
+Favours are posted to circles you choose, typed `family` / `friends` /
+`community`, and a favour can go to several at once.
 
 Community circles are **join-by-code, not a public marketplace**. That is
 deliberate. A public board between strangers needs escrow and dispute handling,
@@ -69,7 +69,7 @@ There is no phone-book integration, and there cannot be:
 So `src/web/share.ts` probes capabilities at runtime and offers only what the
 WebView actually supports, in order of reliability:
 
-1. **QR code** — cannot fail, and chores are usually assigned in person anyway
+1. **QR code** — cannot fail, and favours are usually assigned in person anyway
 2. **Copy link** — with an `execCommand` fallback
 3. **SMS link** — `sms:?body=` / `sms:&body=`, user picks recipients
 4. **`navigator.share`** — offered only if present, and withdrawn on first failure
@@ -84,7 +84,7 @@ SMS carries real exposure under TCPA and GDPR.
 JavaScript, no wallet and no Nimiq Pay install**. They carry OpenGraph tags so
 the link unfurls in whatever messenger it was pasted into.
 
-That is the growth loop: the *chore* spreads, not the app. Someone sees a real
+That is the growth loop: the *favour* spreads, not the app. Someone sees a real
 job with a real reward before anyone asks them to install anything.
 
 ## Payout rails
@@ -155,7 +155,7 @@ and that request is never made.
 
 ```bash
 npx wrangler login
-npx wrangler d1 create chore-circle    # paste the database_id into wrangler.toml
+npx wrangler d1 create favour-circle    # paste the database_id into wrangler.toml
 npm run db:remote                      # apply the schema to the real database
 npm run deploy
 ```

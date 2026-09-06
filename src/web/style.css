@@ -322,7 +322,7 @@ textarea { min-height: 76px; resize: vertical; }
 .chip.kind-friends::before   { background: var(--friends); }
 .chip.kind-community::before { background: var(--community); }
 
-/* A thin edge on the card ties a chore back to the circle it came from. */
+/* A thin edge on the card ties a favour back to the circle it came from. */
 .card.task.from-family    { border-left: 3px solid var(--family); }
 .card.task.from-friends   { border-left: 3px solid var(--friends); }
 .card.task.from-community { border-left: 3px solid var(--community); }

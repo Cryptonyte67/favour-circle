@@ -1,10 +1,10 @@
 {
-  "name": "chore-circle",
+  "name": "favour-circle",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
   "type": "module",
-  "description": "Post a chore to a circle of family, friends or neighbours. Get it done. Pay instantly. A Nimiq Pay Mini App.",
+  "description": "Post a favour to a circle of family, friends or neighbours. Get it done. Pay instantly. A Nimiq Pay Mini App.",
   "scripts": {
     "dev": "run-p dev:server dev:web",
     "dev:server": "wrangler dev",
@@ -13,8 +13,8 @@
     "start": "NODE_ENV=production tsx src/server/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.worker.json --noEmit",
     "smoke": "bash scripts/smoke.sh",
-    "db:local": "wrangler d1 execute chore-circle --local --file=./schema.sql",
-    "db:remote": "wrangler d1 execute chore-circle --remote --file=./schema.sql",
+    "db:local": "wrangler d1 execute favour-circle --local --file=./schema.sql",
+    "db:remote": "wrangler d1 execute favour-circle --remote --file=./schema.sql",
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {

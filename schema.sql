@@ -1,4 +1,4 @@
--- Chore Circle schema for Cloudflare D1.
+-- Favour Circle schema for Cloudflare D1.
 --
 -- The events table is the source of truth: task state is a projection over it,
 -- never a stored row. Users, circles and memberships are ordinary records.
@@ -17,8 +17,8 @@ CREATE TABLE users (
   created_at   INTEGER NOT NULL
 );
 
--- One payout address per (user, chain). A NIM chore resolves to their Nimiq
--- address, a USDT chore to their EVM one.
+-- One payout address per (user, chain). A NIM favour resolves to their Nimiq
+-- address, a USDT favour to their EVM one.
 CREATE TABLE addresses (
   user_id TEXT NOT NULL REFERENCES users(id),
   chain   TEXT NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE events (
 );
 
 -- Derived from task.created payloads at append time. Pure convenience: it lets
--- "which chores can this person see" be one indexed query instead of scanning
+-- "which favours can this person see" be one indexed query instead of scanning
 -- and parsing every event payload.
 CREATE TABLE task_circles (
   task_id   TEXT NOT NULL,

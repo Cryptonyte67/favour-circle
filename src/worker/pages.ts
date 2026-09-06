@@ -2,7 +2,7 @@
  * Public, server-rendered preview pages.
  *
  * These are the growth loop. An invite link lands here, in any browser, with no
- * Nimiq Pay install and no wallet. The chore itself does the persuading; only
+ * Nimiq Pay install and no wallet. The favour itself does the persuading; only
  * accepting it requires the app. They render without JavaScript and carry
  * OpenGraph tags so the link unfurls in whatever messenger it was pasted into.
  */
@@ -65,7 +65,7 @@ function shell(opts: {
 <body>
   <div class="wrap">
     <div class="card">${opts.body}</div>
-    <footer>Chore Circle &middot; a Nimiq Pay Mini App</footer>
+    <footer>Favour Circle &middot; a Nimiq Pay Mini App</footer>
   </div>
 </body>
 </html>`;
@@ -74,7 +74,7 @@ function shell(opts: {
 /**
  * A dead link deserves an explanation, not the app shell.
  *
- * These pages are shared into messengers and live for a long time; a chore gets
+ * These pages are shared into messengers and live for a long time; a favour gets
  * cancelled, a circle gets deleted, someone mistypes a code. Returning the SPA
  * with a 200 makes that look like the app is broken, and hides the 404 from
  * anything checking links.
@@ -82,7 +82,7 @@ function shell(opts: {
 function missing(message: string): Response {
   const body = `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Not found — Chore Circle</title>
+<title>Not found — Favour Circle</title>
 <style>
   :root { color-scheme: light dark; }
   body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
@@ -94,8 +94,8 @@ function missing(message: string): Response {
       color:#fff; text-decoration:none; font-weight:650; }
 </style></head><body><div class="w">
 <h1>${message}</h1>
-<p>The link may have expired, or the chore may have been cancelled.</p>
-<a href="/">Open Chore Circle</a>
+<p>The link may have expired, or the favour may have been cancelled.</p>
+<a href="/">Open Favour Circle</a>
 </div></body></html>`;
   return new Response(body, {
     status: 404,
@@ -125,7 +125,7 @@ export function createPages() {
   pages.get('/t/:id', async (c) => {
     const repo = new Repo(c.env.DB);
     const task = await repo.taskById(c.req.param('id'));
-    if (!task) return missing('This chore does not exist');
+    if (!task) return missing('This favour does not exist');
 
     const poster = await repo.userById(task.posterId);
     const posterName = poster ? poster.displayName : 'Someone';
@@ -150,7 +150,7 @@ export function createPages() {
             ? html`<a class="cta" href="${deeplink}">Open in Nimiq Pay to accept</a>
                    <span class="alt">You will need Nimiq Pay and a wallet to get paid.</span>
                    <span class="alt"><a href="/help/cash-out">New to crypto? What this pays you in</a></span>`
-            : html`<span class="alt">This chore is no longer open.</span>`}
+            : html`<span class="alt">This favour is no longer open.</span>`}
         `,
       }),
     );
@@ -164,8 +164,8 @@ export function createPages() {
     const deeplink = deeplinkFor(c.env.APP_URL, c.req.url, `/#/join/${circle.inviteCode}`);
     return c.html(
       shell({
-        title: `Join ${circle.name} on Chore Circle`,
-        description: `A ${circle.kind} circle. Post chores, get them done, pay instantly.`,
+        title: `Join ${circle.name} on Favour Circle`,
+        description: `A ${circle.kind} circle. Post favours, get them done, pay instantly.`,
         deeplink,
         body: html`
           <span class="pill">${circle.kind} circle</span>
@@ -260,7 +260,7 @@ approved, get paid straight to your wallet.</p>
       '.ghost{border:1px solid rgba(128,128,128,.45);color:inherit}',
       'code{font-size:12px;word-break:break-all;opacity:.55;display:block;margin-top:18px}',
       '</style></head><body><div class="w">',
-      '<h1>Open Chore Circle in Nimiq Pay</h1>',
+      '<h1>Open Favour Circle in Nimiq Pay</h1>',
       '<p>Needs Nimiq Pay installed on this device. Without it you will be sent',
       'to the App Store &mdash; that is the intended fallback, not an error.</p>',
       '<a class="primary" href="' + universal + '">Open in Nimiq Pay</a>',
@@ -275,7 +275,7 @@ approved, get paid straight to your wallet.</p>
    * Written to be honest rather than encouraging. Nimiq Pay is a payment app
    * with no built-in off-ramp, and Nimiq's own OASIS covers NIM and BTC in
    * Europe — neither cashes out USDT for most people. Someone deciding whether
-   * to take a chore paid in crypto deserves to know that before they accept,
+   * to take a favour paid in crypto deserves to know that before they accept,
    * not after.
    *
    * Deliberately names no exchange. Availability, fees and legal status vary by
@@ -287,7 +287,7 @@ approved, get paid straight to your wallet.</p>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Getting paid in crypto — Chore Circle</title>
+<title>Getting paid in crypto — Favour Circle</title>
 <meta property="og:title" content="Getting paid in crypto — what you can actually do with it">
 <meta property="og:description" content="A plain explanation for people who have never held crypto before.">
 <style>
@@ -335,7 +335,7 @@ worth knowing why before you count on it.</p>
 
 <h2>Converting to normal money</h2>
 <p>Nimiq Pay is a payments app. <strong>It cannot turn your balance into cash for
-you</strong>, and neither can Chore Circle. To convert, you use a separate
+you</strong>, and neither can Favour Circle. To convert, you use a separate
 service — usually a crypto exchange — which typically means:</p>
 <ul>
   <li>Creating an account and <strong>verifying your identity</strong> with a photo ID</li>
@@ -348,7 +348,7 @@ withdrawal amount.</p>
 
 <div class="flag">
 <p><strong>Small amounts often are not worth converting.</strong> If you earned the
-equivalent of a few dollars doing chores, fees and minimums can eat most of it.
+equivalent of a few dollars doing favours, fees and minimums can eat most of it.
 Spending it or letting it build up first usually makes more sense.</p>
 </div>
 
@@ -360,15 +360,15 @@ we cannot know what is available or appropriate where you are.</p>
 account. Two limits worth knowing: it covers <strong>NIM and BTC, not USDT</strong>, and it
 needs a euro bank account supporting SEPA Instant, so it is Europe-focused.</p>
 
-<h2>Before you accept a chore</h2>
+<h2>Before you accept a favour</h2>
 <p>If being able to convert to cash easily matters to you, check what is available
 in your country <em>first</em>. Agreeing to do something for crypto you cannot
 readily spend or convert is a bad trade, however good the rate looks.</p>
 
 <footer>
-<p>General information only, not financial advice. Chore Circle never holds,
+<p>General information only, not financial advice. Favour Circle never holds,
 converts or has access to your money — payments go straight between wallets.</p>
-<p><a href="/">Back to Chore Circle</a></p>
+<p><a href="/">Back to Favour Circle</a></p>
 </footer>
 
 </div></body></html>`),
@@ -388,7 +388,7 @@ converts or has access to your money — payments go straight between wallets.</
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Chore Circle diagnostics</title>
+<title>Favour Circle diagnostics</title>
 <style>
   :root { color-scheme: light dark; }
   body { margin:0; padding:16px; font:15px/1.5 -apple-system,system-ui,sans-serif; max-width:520px; }
@@ -407,7 +407,7 @@ converts or has access to your money — payments go straight between wallets.</
   #context.bad { background:#c33; color:#fff; }
   #context small { display:block; font-weight:400; opacity:.9; margin-top:4px; }
 </style></head><body>
-<h1>Chore Circle diagnostics</h1>
+<h1>Favour Circle diagnostics</h1>
 <div id="context"></div>
 <p style="opacity:.7;margin:0">Open this inside Nimiq Pay, tap every button, then Copy results.</p>
 
@@ -415,8 +415,8 @@ converts or has access to your money — payments go straight between wallets.</
 <h2>Active checks — tap each</h2>
 <button id="b-share">Test navigator.share</button>
 <button id="b-clip">Test clipboard write</button>
-<a class="btn" id="b-sms" href="sms:&amp;body=Chore%20Circle%20test">Test sms: with &amp; (iOS form)</a>
-<a class="btn" id="b-sms2" href="sms:?body=Chore%20Circle%20test">Test sms: with ? (Android form)</a>
+<a class="btn" id="b-sms" href="sms:&amp;body=Favour%20Circle%20test">Test sms: with &amp; (iOS form)</a>
+<a class="btn" id="b-sms2" href="sms:?body=Favour%20Circle%20test">Test sms: with ? (Android form)</a>
 <a class="btn" href="https://nimiq.com" target="_blank" rel="noopener">Test external link</a>
 <button id="b-fetch">Test price API (drives currency conversion)</button>
 <button id="b-accounts">Test wallet getAccounts</button>
@@ -457,7 +457,7 @@ function row(host,k,v){ var cls = v===true?'yes':v===false?'no':'idk';
     box.className = 'bad';
     box.innerHTML = 'This is Safari, not Nimiq Pay.' +
       '<small>No wallet here, so the wallet tests cannot answer anything. ' +
-      'Open Chore Circle inside Nimiq Pay and tap "Run capability diagnostics".</small>';
+      'Open Favour Circle inside Nimiq Pay and tap "Run capability diagnostics".</small>';
   } else {
     box.className = 'bad';
     box.innerHTML = 'No wallet detected.' +
@@ -503,13 +503,13 @@ draw();
 
 document.getElementById('b-share').onclick = function(){
   if(!navigator.share) return set('shareResult','absent');
-  navigator.share({title:'Chore Circle',text:'test',url:location.origin})
+  navigator.share({title:'Favour Circle',text:'test',url:location.origin})
     .then(function(){ set('shareResult','worked'); })
     .catch(function(e){ set('shareResult', e.name + ': ' + e.message); });
 };
 document.getElementById('b-clip').onclick = function(){
   if(!(navigator.clipboard&&navigator.clipboard.writeText)) return set('clipboardResult','absent');
-  navigator.clipboard.writeText('chore-circle-test')
+  navigator.clipboard.writeText('favour-circle-test')
     .then(function(){ set('clipboardResult','worked'); })
     .catch(function(e){ set('clipboardResult', e.name + ': ' + e.message); });
 };
@@ -539,7 +539,7 @@ document.getElementById('b-accounts').onclick = function(){
   Promise.all(jobs).then(function(){ set('accounts', out); });
 };
 document.getElementById('b-sign').onclick = function(){
-  var msg = 'chore-circle diagnostic ' + Date.now();
+  var msg = 'favour-circle diagnostic ' + Date.now();
   if(window.nimiq && window.nimiq.signMessage){
     Promise.resolve().then(function(){ return window.nimiq.signMessage(msg); })
       .then(function(s){ set('signature', { via:'nimiq', value: String(s).slice(0,300) }); })

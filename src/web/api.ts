@@ -1,6 +1,6 @@
 import type { Chain, Circle, Id, ResolvedOwedBucket, Task, User } from '../shared/types.js';
 
-const USER_KEY = 'chore-circle:user-id';
+const USER_KEY = 'favour-circle:user-id';
 
 export interface CircleWithCount extends Circle {
   memberCount: number;

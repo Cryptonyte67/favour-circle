@@ -39,7 +39,7 @@ j() { curl -s -H 'content-type: application/json' "$@"; }
 pluck() { node -pe "try{JSON.parse(require('fs').readFileSync(0))$1}catch(e){'PARSE_ERROR'}"; }
 
 echo
-echo "Chore Circle smoke test -> $BASE"
+echo "Favour Circle smoke test -> $BASE"
 echo
 
 if ! curl -s -m 3 "$BASE/healthz" | grep -q '"ok":true'; then
@@ -68,25 +68,25 @@ assert_has "bob joins with the invite code" "Smoke House" \
 assert_has "a bad code is rejected" "does not match" \
   "$(j "${B[@]}" -X POST -d '{"code":"ZZZZZZ"}' "$API/circles/join" | pluck '.error')"
 
-# ---------------------------------------------------------------- chores
+# ---------------------------------------------------------------- favours
 
 T1=$(j "${A[@]}" -X POST -d "{\"title\":\"Bins\",\"amount\":\"2.5\",\"assetKey\":\"NIM\",\"circleIds\":[\"$CID\"]}" "$API/tasks" | pluck '.task.id')
 T2=$(j "${A[@]}" -X POST -d "{\"title\":\"Dog\",\"amount\":\"4\",\"assetKey\":\"NIM\",\"circleIds\":[\"$CID\"]}" "$API/tasks" | pluck '.task.id')
 
 echo
 echo "validation"
-assert_has "a chore needs a title" "What needs doing" \
+assert_has "a favour needs a title" "What needs doing" \
   "$(j "${A[@]}" -X POST -d "{\"title\":\"\",\"amount\":\"1\",\"circleIds\":[\"$CID\"]}" "$API/tasks" | pluck '.error')"
 assert_has "a zero reward is rejected" "more than zero" \
   "$(j "${A[@]}" -X POST -d "{\"title\":\"x\",\"amount\":\"0\",\"circleIds\":[\"$CID\"]}" "$API/tasks" | pluck '.error')"
 assert_has "excess decimal precision is rejected" "decimal places" \
   "$(j "${A[@]}" -X POST -d "{\"title\":\"x\",\"amount\":\"1.1234567\",\"circleIds\":[\"$CID\"]}" "$API/tasks" | pluck '.error')"
-assert_has "a chore must go to a circle" "at least one circle" \
+assert_has "a favour must go to a circle" "at least one circle" \
   "$(j "${A[@]}" -X POST -d '{"title":"x","amount":"1","circleIds":[]}' "$API/tasks" | pluck '.error')"
 
 echo
 echo "lifecycle guards"
-assert_has "you cannot claim your own chore" "your own chore" \
+assert_has "you cannot claim your own favour" "your own favour" \
   "$(j "${A[@]}" -X POST "$API/tasks/$T1/claim" | pluck '.error')"
 assert_has "you cannot approve before submission" "that is open" \
   "$(j "${A[@]}" -X POST "$API/tasks/$T1/approve" | pluck '.error')"
@@ -94,7 +94,7 @@ assert_has "you cannot approve before submission" "that is open" \
 j "${B[@]}" -X POST "$API/tasks/$T1/claim" > /dev/null
 j "${B[@]}" -X POST "$API/tasks/$T2/claim" > /dev/null
 
-assert_has "a claimed chore cannot be claimed again" "that is claimed" \
+assert_has "a claimed favour cannot be claimed again" "that is claimed" \
   "$(j "${B[@]}" -X POST "$API/tasks/$T1/claim" | pluck '.error')"
 
 j "${B[@]}" -X POST -d '{"signature":"mocksig:1"}' "$API/tasks/$T1/done" > /dev/null
@@ -113,11 +113,11 @@ j "${A[@]}" -X POST "$API/tasks/$T2/approve" > /dev/null
 echo
 echo "batching"
 OWED=$(j "${A[@]}" "$API/tasks")
-assert "two chores collapse into one bucket" "1" \
+assert "two favours collapse into one bucket" "1" \
   "$(echo "$OWED" | pluck ".owed.filter(b=>b.posterId==='$ALICE').length")"
 assert "2.5 + 4 NIM totals 650000 luna" "650000" \
   "$(echo "$OWED" | pluck ".owed.find(b=>b.posterId==='$ALICE').units")"
-assert "the bucket covers both chores" "2" \
+assert "the bucket covers both favours" "2" \
   "$(echo "$OWED" | pluck ".owed.find(b=>b.posterId==='$ALICE').taskIds.length")"
 
 echo
@@ -133,11 +133,11 @@ assert "payTo resolves to the doer, not the poster" "$BOB_ADDR" \
   "$(j "${A[@]}" "$API/tasks" | pluck ".owed.find(b=>b.posterId==='$ALICE').payTo.address")"
 assert_has "paying a different address is rejected" "not go to the address on record" \
   "$(j "${A[@]}" -X POST -d "{\"taskIds\":[\"$T1\"],\"railId\":\"nimiq\",\"txHash\":\"tx2\",\"paidTo\":\"$ALICE_ADDR\"}" "$API/settle" | pluck '.error')"
-assert_has "only the poster may settle" "chores you posted" \
+assert_has "only the poster may settle" "favours you posted" \
   "$(j "${B[@]}" -X POST -d "{\"taskIds\":[\"$T1\"],\"railId\":\"nimiq\",\"txHash\":\"tx3\",\"paidTo\":\"$BOB_ADDR\"}" "$API/settle" | pluck '.error')"
 
 SETTLED=$(j "${A[@]}" -X POST -d "{\"taskIds\":[\"$T1\",\"$T2\"],\"railId\":\"nimiq\",\"txHash\":\"tx4\",\"paidTo\":\"$BOB_ADDR\"}" "$API/settle")
-assert "both chores settle in one transaction" "2" "$(echo "$SETTLED" | pluck '.settled.length')"
+assert "both favours settle in one transaction" "2" "$(echo "$SETTLED" | pluck '.settled.length')"
 assert "the paid address is recorded" "$BOB_ADDR" "$(echo "$SETTLED" | pluck '.settled[0].settlement.paidTo')"
 assert "nothing is left owing" "0" \
   "$(j "${A[@]}" "$API/tasks" | pluck ".owed.filter(b=>b.posterId==='$ALICE').length")"
@@ -146,11 +146,11 @@ assert "nothing is left owing" "0" \
 
 echo
 echo "public pages (no auth, no app)"
-assert_has "a chore page renders its title" "Bins" "$(curl -s "$BASE/t/$T1" | tr -d '\n')"
-assert_has "a chore page carries OpenGraph tags" 'og:title' "$(curl -s "$BASE/t/$T1" | tr -d '\n')"
-assert_has "a settled chore hides the accept button" "no longer open" "$(curl -s "$BASE/t/$T1" | tr -d '\n')"
+assert_has "a favour page renders its title" "Bins" "$(curl -s "$BASE/t/$T1" | tr -d '\n')"
+assert_has "a favour page carries OpenGraph tags" 'og:title' "$(curl -s "$BASE/t/$T1" | tr -d '\n')"
+assert_has "a settled favour hides the accept button" "no longer open" "$(curl -s "$BASE/t/$T1" | tr -d '\n')"
 assert_has "a join page renders the circle name" "Smoke House" "$(curl -s "$BASE/join/$CODE" | tr -d '\n')"
-assert "an unknown chore 404s" "404" \
+assert "an unknown favour 404s" "404" \
   "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/t/does-not-exist")"
 
 echo

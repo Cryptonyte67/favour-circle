@@ -75,7 +75,7 @@ export function projectTask(events: TaskEvent[]): Task | null {
  * Group approved-but-unsettled tasks into one bucket per (poster, doer, asset).
  *
  * This is the batching that stops Nimiq Pay raising a native confirmation
- * dialog per chore. Ten approved chores settle as one payment, one dialog.
+ * dialog per favour. Ten approved favours settle as one payment, one dialog.
  */
 export function owedBuckets(tasks: Task[]): OwedBucket[] {
   const byKey = new Map<string, OwedBucket>();

@@ -69,7 +69,7 @@ export function createApi() {
    * Register the address this person gets paid at, per chain.
    *
    * Someone can onboard with no wallet connected, so this has to be settable
-   * afterwards. Without it they can do chores and be approved but cannot be
+   * afterwards. Without it they can do favours and be approved but cannot be
    * paid, which the Owed tab surfaces explicitly rather than guessing.
    */
   api.put('/me/addresses', async (c) => {
@@ -120,7 +120,7 @@ export function createApi() {
     return c.json({ circle });
   });
 
-  /* ------------------------------ chores ---------------------------- */
+  /* ------------------------------ favours ---------------------------- */
 
   api.get('/tasks', async (c) => {
     const user = await requireUser(c);
@@ -205,7 +205,7 @@ export function createApi() {
       const user = await requireUser(c);
       const repo = new Repo(c.env.DB);
       const task = await repo.taskById(c.req.param('id'));
-      if (!task) throw bad('No such chore', 404);
+      if (!task) throw bad('No such favour', 404);
       const body = await c.req.json<Record<string, unknown>>().catch(() => ({}));
 
       const problem = await guard({ user, task, repo });
@@ -213,7 +213,7 @@ export function createApi() {
 
       const event = build({ user, task, body });
       if (!canApply(event.type, task.status)) {
-        throw bad(`Cannot ${action} a chore that is ${task.status}`, 409);
+        throw bad(`Cannot ${action} a favour that is ${task.status}`, 409);
       }
       await repo.appendEvent(event);
       return c.json({ task: await repo.taskById(task.id) });
@@ -224,11 +224,11 @@ export function createApi() {
     'claim',
     ({ user, task }) => ({ ...base(user, task), type: 'task.claimed' }),
     async ({ user, task, repo }) => {
-      if (task.posterId === user.id) return 'You cannot claim your own chore';
+      if (task.posterId === user.id) return 'You cannot claim your own favour';
       for (const id of task.circleIds) {
         if (await repo.isMember(id, user.id)) return null;
       }
-      return 'That chore is not posted to any of your circles';
+      return 'That favour is not posted to any of your circles';
     },
   );
 
@@ -260,7 +260,7 @@ export function createApi() {
   );
 
   /**
-   * Record settlement of a whole bucket of approved chores.
+   * Record settlement of a whole bucket of approved favours.
    *
    * The payment itself happens client-side through the wallet, because only
    * Nimiq Pay can raise the native confirmation dialog. The client sends the
@@ -284,14 +284,14 @@ export function createApi() {
     const settled: Task[] = [];
     for (const taskId of body.taskIds || []) {
       const task = await repo.taskById(taskId);
-      if (!task) throw bad('No such chore', 404);
-      if (task.posterId !== user.id) throw bad('You can only settle chores you posted', 403);
+      if (!task) throw bad('No such favour', 404);
+      if (task.posterId !== user.id) throw bad('You can only settle favours you posted', 403);
       if (!canApply('task.settled', task.status)) continue;
 
       // The client chose the address, so re-derive it here and refuse to record
       // a settlement against anything else. Without this a bug or a tampered
-      // client could mark chores paid while the money went elsewhere.
-      if (!task.doerId) throw bad('That chore has nobody to pay', 409);
+      // client could mark favours paid while the money went elsewhere.
+      if (!task.doerId) throw bad('That favour has nobody to pay', 409);
       const { chain } = assetOf(task.reward.assetKey);
       const expected = await repo.payoutAddress(task.doerId, chain);
       if (!expected) {
@@ -299,7 +299,7 @@ export function createApi() {
         throw bad((doer?.displayName ?? 'That person') + ' has not added a wallet address yet', 409);
       }
       if (expected.address !== paidTo) {
-        throw bad('That payment did not go to the address on record for this chore', 409);
+        throw bad('That payment did not go to the address on record for this favour', 409);
       }
 
       await repo.appendEvent({ ...base(user, task), type: 'task.settled', railId, txHash, paidTo });

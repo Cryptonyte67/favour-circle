@@ -57,7 +57,7 @@ export const ASSETS: Record<string, AssetSpec> = {
   },
 };
 
-/** Assets a chore can be priced in, in the order shown to the user. */
+/** Assets a favour can be priced in, in the order shown to the user. */
 export const SELECTABLE_ASSET_KEYS = ['NIM', 'USDT@polygon'];
 
 export const DEFAULT_ASSET_KEY = 'NIM';
@@ -115,7 +115,7 @@ export interface Task {
   reward: Money;
   posterId: Id;
   doerId: Id | null;
-  /** A chore can be posted to several circles at once. */
+  /** A favour can be posted to several circles at once. */
   circleIds: Id[];
   status: TaskStatus;
   createdAt: number;

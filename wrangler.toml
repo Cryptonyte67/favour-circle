@@ -1,4 +1,4 @@
-name = "chore-circle"
+name = "favour-circle"
 main = "src/worker/index.ts"
 compatibility_date = "2026-09-06"
 
@@ -14,13 +14,13 @@ not_found_handling = "single-page-application"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "chore-circle"
-database_id = "eb3b6e81-54f4-45c7-8705-730590ea6420"
+database_name = "favour-circle"
+database_id = "b2237967-83bd-458e-bed2-3ddeb2ff893a"
 
 [vars]
 # Overridden per environment. Must be the real public origin in production,
 # because Nimiq Pay deeplinks are built from it.
-APP_URL = "https://chore-circle.chore-circle.workers.dev"
+APP_URL = "https://favour-circle.chore-circle.workers.dev"
 
 [dev]
 port = 8787

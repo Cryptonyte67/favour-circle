@@ -56,7 +56,7 @@ interface State {
   addresses: WalletAddress[];
   circles: CircleWithCount[];
   tasks: TasksResponse | null;
-  tab: 'chores' | 'circles' | 'owed';
+  tab: 'favours' | 'circles' | 'owed';
   filter: CircleKind | 'all';
   currency: Currency;
   busy: boolean;
@@ -69,7 +69,7 @@ const state: State = {
   addresses: [],
   circles: [],
   tasks: null,
-  tab: 'chores',
+  tab: 'favours',
   filter: 'all',
   currency: detectCurrency(),
   busy: false,
@@ -219,9 +219,9 @@ function appFooter(): HTMLElement {
 function diagnosticsEnabled(): boolean {
   try {
     const flag = new URLSearchParams(location.search).get('diag');
-    if (flag === '1') localStorage.setItem('chore-circle:diag', '1');
-    if (flag === '0') localStorage.removeItem('chore-circle:diag');
-    return localStorage.getItem('chore-circle:diag') === '1';
+    if (flag === '1') localStorage.setItem('favour-circle:diag', '1');
+    if (flag === '0') localStorage.removeItem('favour-circle:diag');
+    return localStorage.getItem('favour-circle:diag') === '1';
   } catch {
     return false;
   }
@@ -295,7 +295,7 @@ function renderOnboarding(): HTMLElement {
   const wrap = el('div', { class: 'card center' });
   wrap.append(
     el('div', { class: 'brand brand-lg' }, logoElement(56)),
-    el('h1', {}, 'Chore Circle'),
+    el('h1', {}, 'Favour Circle'),
     el(
       'p',
       { class: 'muted' },
@@ -342,10 +342,10 @@ function renderOnboarding(): HTMLElement {
   return wrap;
 }
 
-/* -------------------------------- chores ----------------------------- */
+/* -------------------------------- favours ----------------------------- */
 
 function taskCard(task: Task): HTMLElement {
-  // Where a chore spans several circles the first is used; the edge is a hint
+  // Where a favour spans several circles the first is used; the edge is a hint
   // about origin, not a claim of exclusivity.
   const kind = state.circles.find((c) => task.circleIds.includes(c.id))?.kind;
   const card = el('div', { class: 'card task' + (kind ? ' from-' + kind : '') });
@@ -392,7 +392,7 @@ function taskCard(task: Task): HTMLElement {
       guard(async () => {
         // The signature is a nice-to-have audit trail, never a blocker.
         const signature = await wallet.signMessage(
-          'I completed chore ' + task.id + ' at ' + new Date().toISOString(),
+          'I completed favour ' + task.id + ' at ' + new Date().toISOString(),
         );
         await api.markDone(task.id, signature);
         await refresh();
@@ -424,7 +424,7 @@ function taskCard(task: Task): HTMLElement {
 
   if (task.status === 'open') {
     const share = el('button', { class: 'ghost' }, 'Share');
-    share.onclick = () => shareSheet('Share this chore', taskUrl(origin, task.id), task.title);
+    share.onclick = () => shareSheet('Share this favour', taskUrl(origin, task.id), task.title);
     actions.append(share);
   }
 
@@ -436,14 +436,14 @@ function taskCard(task: Task): HTMLElement {
   return card;
 }
 
-function renderChores(): HTMLElement {
+function renderFavours(): HTMLElement {
   const wrap = el('div', {});
 
   if (state.circles.length === 0) {
     wrap.append(
       el('div', { class: 'card center' },
         el('h3', {}, 'No circles yet'),
-        el('p', { class: 'muted' }, 'Create one, or join with a code, before posting a chore.'),
+        el('p', { class: 'muted' }, 'Create one, or join with a code, before posting a favour.'),
       ),
     );
     return wrap;
@@ -492,18 +492,18 @@ function renderChores(): HTMLElement {
   return wrap;
 }
 
-function postChoreSheet() {
+function postFavourSheet() {
   const body = el('div', {});
   const title = el('input', { placeholder: 'What needs doing?', maxlength: '80' });
   const detail = el('textarea', { placeholder: 'Any detail (optional)', rows: '3' });
   const amount = el('input', { placeholder: '2.50', inputmode: 'decimal' });
 
-  // Three ways to price a chore: in NIM, in USDT, or in the viewer's own
+  // Three ways to price a favour: in NIM, in USDT, or in the viewer's own
   // currency. The last is how people actually think — "I'll pay three pounds
   // for this" — so it exists alongside the crypto assets rather than as a
   // read-only conversion underneath them.
   //
-  // Fiat entry settles in USDT, never NIM. A chore posted as "£3" and paid a
+  // Fiat entry settles in USDT, never NIM. A favour posted as "£3" and paid a
   // week later in NIM could be worth noticeably more or less; pinned to a
   // stablecoin it stays roughly £3, which is what the poster meant.
   const FIAT_MODE = 'FIAT';
@@ -540,7 +540,7 @@ function postChoreSheet() {
     fiatChip.title = 'Exchange rate unavailable';
   }
 
-  /** What this chore will actually be posted as, given the current mode. */
+  /** What this favour will actually be posted as, given the current mode. */
   const resolveAmount = (): { assetKey: string; amount: string } | null => {
     if (mode !== FIAT_MODE) return { assetKey: mode, amount: amount.value };
     const converted = fiatToAssetAmount(FIAT_SETTLES_IN, amount.value, state.currency);
@@ -557,7 +557,7 @@ function postChoreSheet() {
     circleBox.append(el('div', { class: 'check' }, input, label));
   }
 
-  const submit = el('button', { class: 'primary' }, 'Post chore');
+  const submit = el('button', { class: 'primary' }, 'Post favour');
   submit.onclick = () =>
     guard(async () => {
       const resolved = resolveAmount();
@@ -572,7 +572,7 @@ function postChoreSheet() {
       sheet.remove();
       await refresh();
       notify('ok', 'Posted.');
-      shareSheet('Share this chore', taskUrl(origin, task.id), task.title);
+      shareSheet('Share this favour', taskUrl(origin, task.id), task.title);
     });
 
   // Live indicative value while typing, so the poster knows what they are
@@ -588,7 +588,7 @@ function postChoreSheet() {
         preview.textContent = 'Exchange rate unavailable';
         return;
       }
-      // Format through the same path the chore card uses. Hand-trimming the
+      // Format through the same path the favour card uses. Hand-trimming the
       // decimal string here produced a preview that disagreed with the posted
       // amount, which is worse than no preview at all.
       try {
@@ -615,7 +615,7 @@ function postChoreSheet() {
   amount.oninput = updatePreview;
 
   body.append(
-    el('label', { class: 'field-label' }, 'Chore'),
+    el('label', { class: 'field-label' }, 'Favour'),
     title,
     detail,
     el('label', { class: 'field-label' }, 'Reward'),
@@ -627,7 +627,7 @@ function postChoreSheet() {
     submit,
   );
 
-  const sheet = openSheet('New chore', body);
+  const sheet = openSheet('New favour', body);
   title.focus();
 }
 
@@ -707,7 +707,7 @@ function createCircleSheet() {
     el(
       'p',
       { class: 'note' },
-      'Community circles are join-by-code, not a public board. Everyone in a circle can see and claim its chores.',
+      'Community circles are join-by-code, not a public board. Everyone in a circle can see and claim its favours.',
     ),
     submit,
   );
@@ -742,7 +742,7 @@ function renderOwed(): HTMLElement {
     el(
       'p',
       { class: 'note' },
-      'Approved chores are batched per person, so ten chores settle as one payment and one confirmation dialog.',
+      'Approved favours are batched per person, so ten favours settle as one payment and one confirmation dialog.',
     ),
   );
 
@@ -758,7 +758,7 @@ function renderOwed(): HTMLElement {
         el('h3', {}, nameOf(bucket.doerId)),
         el('span', { class: 'reward' }, formatUnits(bucket.assetKey, bucket.units) + ' ' + (ASSETS[bucket.assetKey]?.symbol ?? '')),
       ),
-      el('p', { class: 'muted small' }, bucket.taskIds.length + ' approved chore' + (bucket.taskIds.length === 1 ? '' : 's')),
+      el('p', { class: 'muted small' }, bucket.taskIds.length + ' approved favour' + (bucket.taskIds.length === 1 ? '' : 's')),
     );
 
     if (!bucket.payTo) {
@@ -769,7 +769,7 @@ function renderOwed(): HTMLElement {
           'p',
           { class: 'note' },
           nameOf(bucket.doerId) +
-            ' has not added a wallet address yet, so this cannot be paid. Ask them to open Chore Circle and connect a wallet.',
+            ' has not added a wallet address yet, so this cannot be paid. Ask them to open Favour Circle and connect a wallet.',
         ),
       );
       wrap.append(card);
@@ -787,13 +787,13 @@ function renderOwed(): HTMLElement {
           to: payTo.address,
           units: bucket.units,
           assetKey: bucket.assetKey,
-          memo: 'Chore Circle: ' + bucket.taskIds.length + ' chores',
+          memo: 'Favour Circle: ' + bucket.taskIds.length + ' favours',
         });
         // The server re-derives this address and rejects a mismatch, so a bug
-        // here cannot mark chores paid while the money went somewhere else.
+        // here cannot mark favours paid while the money went somewhere else.
         await api.settle(bucket.taskIds, rail.id, txHash, payTo.address);
         await refresh();
-        notify('ok', 'Paid. ' + bucket.taskIds.length + ' chores settled in one transaction.');
+        notify('ok', 'Paid. ' + bucket.taskIds.length + ' favours settled in one transaction.');
       });
     card.append(pay);
     wrap.append(card);
@@ -807,7 +807,7 @@ function renderOwed(): HTMLElement {
 /**
  * Shown whenever the signed-in user has no payout address.
  *
- * Someone can onboard before connecting a wallet, do chores, get approved, and
+ * Someone can onboard before connecting a wallet, do favours, get approved, and
  * then be unpayable. Surfacing it at the top of every tab is deliberate: it is
  * the one piece of setup that silently breaks the end of the loop.
  */
@@ -820,7 +820,7 @@ function walletPrompt(): HTMLElement | null {
     el(
       'p',
       { class: 'muted small' },
-      'You can post and approve chores without one, but nobody can pay you until this is set.',
+      'You can post and approve favours without one, but nobody can pay you until this is set.',
     ),
   );
 
@@ -962,7 +962,7 @@ function render() {
   };
 
   const header = el('header', {},
-    el('div', { class: 'brand' }, logoElement(24), el('h1', {}, 'Chore Circle')),
+    el('div', { class: 'brand' }, logoElement(24), el('h1', {}, 'Favour Circle')),
     el('div', { class: 'row', style: 'gap:10px' },
       el('span', { class: 'muted small' }, wallet.isReal ? 'Nimiq Pay' : 'Mock wallet'),
       currencySelect,
@@ -973,7 +973,7 @@ function render() {
   const tabs = el('nav', { class: 'tabs' });
   const owedCount = (state.tasks?.owed ?? []).filter((b) => b.posterId === state.userId).length;
   const defs: [State['tab'], string][] = [
-    ['chores', 'Chores'],
+    ['favours', 'Favours'],
     ['circles', 'Circles'],
     ['owed', owedCount ? 'Owed (' + owedCount + ')' : 'Owed'],
   ];
@@ -990,14 +990,14 @@ function render() {
   const main = el('main', {});
   const prompt = walletPrompt();
   if (prompt) main.append(prompt);
-  if (state.tab === 'chores') main.append(renderChores());
+  if (state.tab === 'favours') main.append(renderFavours());
   if (state.tab === 'circles') main.append(renderCircles());
   if (state.tab === 'owed') main.append(renderOwed());
   root.append(main);
 
-  if (state.tab === 'chores' && state.circles.length > 0) {
-    const fab = el('button', { class: 'fab', 'aria-label': 'Post a chore' }, '+');
-    fab.onclick = postChoreSheet;
+  if (state.tab === 'favours' && state.circles.length > 0) {
+    const fab = el('button', { class: 'fab', 'aria-label': 'Post a favour' }, '+');
+    fab.onclick = postFavourSheet;
     root.append(fab);
   }
 
@@ -1011,7 +1011,7 @@ function render() {
 async function boot() {
   wallet = detectProvider();
   rails = railsFor(wallet);
-  console.info('[chore-circle] wallet provider: %s', wallet.id);
+  console.info('[favour-circle] wallet provider: %s', wallet.id);
 
   if (state.userId) {
     try {

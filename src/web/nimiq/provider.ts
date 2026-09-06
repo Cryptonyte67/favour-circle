@@ -101,7 +101,7 @@ export class NimiqPayProvider implements WalletProvider {
 
   async signMessage(message: string): Promise<string | null> {
     // Signing is optional everywhere it is used: it strengthens the audit trail
-    // but must never block someone from marking a chore done.
+    // but must never block someone from marking a favour done.
     try {
       if (window.nimiq?.signMessage) return await window.nimiq.signMessage(message);
       if (window.ethereum) {
@@ -203,7 +203,7 @@ export function encodeErc20Transfer(to: string, units: string): string {
 
 /* -------------------------------------------------------------------- */
 
-const MOCK_ADDRESS_KEY = 'chore-circle:mock-address';
+const MOCK_ADDRESS_KEY = 'favour-circle:mock-address';
 
 /**
  * A stable per-browser mock address.

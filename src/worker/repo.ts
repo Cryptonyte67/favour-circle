@@ -266,7 +266,7 @@ export class Repo {
   }
 
   /**
-   * Every chore this person may see: posted to one of their circles, or one
+   * Every favour this person may see: posted to one of their circles, or one
    * they acted on themselves (actor covers both poster and doer).
    */
   async tasksVisibleTo(userId: Id): Promise<Task[]> {

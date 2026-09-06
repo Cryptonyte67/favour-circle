@@ -104,7 +104,7 @@ export async function probeWallet(wallet: WalletProvider): Promise<DiagnosticsRe
     out.accounts = 'ERROR: ' + (err as Error).message;
   }
   try {
-    const signature = await wallet.signMessage('chore-circle diagnostic ' + Date.now());
+    const signature = await wallet.signMessage('favour-circle diagnostic ' + Date.now());
     out.signature = signature ? String(signature).slice(0, 200) : null;
   } catch (err) {
     out.signature = 'ERROR: ' + (err as Error).message;
@@ -128,7 +128,7 @@ export async function probePriceApi(): Promise<DiagnosticsReport> {
 
 export async function probeClipboard(): Promise<string> {
   try {
-    await navigator.clipboard.writeText('chore-circle-test');
+    await navigator.clipboard.writeText('favour-circle-test');
     return 'worked';
   } catch (err) {
     return 'failed: ' + (err as Error).message;
@@ -138,7 +138,7 @@ export async function probeClipboard(): Promise<string> {
 export async function probeShare(): Promise<string> {
   if (typeof navigator.share !== 'function') return 'absent';
   try {
-    await navigator.share({ title: 'Chore Circle', text: 'test', url: location.origin });
+    await navigator.share({ title: 'Favour Circle', text: 'test', url: location.origin });
     return 'worked';
   } catch (err) {
     return (err as Error).name + ': ' + (err as Error).message;
