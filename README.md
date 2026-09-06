@@ -1,6 +1,6 @@
 # Favour Circle
 
-Post a small job to your **family**, **friends** or **neighbours**. They do it,
+Post a favour to your **family**, **friends** or **neighbours**. They do it,
 you approve, they get paid — straight to their wallet, in one tap.
 
 A Mini App for [Nimiq Pay](https://nimiq.dev/mini-apps/).
@@ -85,7 +85,7 @@ JavaScript, no wallet and no Nimiq Pay install**. They carry OpenGraph tags so
 the link unfurls in whatever messenger it was pasted into.
 
 That is the growth loop: the *favour* spreads, not the app. Someone sees a real
-job with a real reward before anyone asks them to install anything.
+favour with a real reward before anyone asks them to install anything.
 
 ## Payout rails
 

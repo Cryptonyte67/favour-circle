@@ -20,7 +20,7 @@ database_id = "b2237967-83bd-458e-bed2-3ddeb2ff893a"
 [vars]
 # Overridden per environment. Must be the real public origin in production,
 # because Nimiq Pay deeplinks are built from it.
-APP_URL = "https://favour-circle.chore-circle.workers.dev"
+APP_URL = "https://favour-circle.favour-circle.workers.dev"
 
 [dev]
 port = 8787

@@ -171,7 +171,7 @@ export function createPages() {
           <span class="pill">${circle.kind} circle</span>
           <h1>${circle.name}</h1>
           <p class="muted">You have been invited to join this circle.</p>
-          <p class="detail">Members post small jobs with a reward attached. Do one, get
+          <p class="detail">Members post favours with a reward attached. Do one, get
 approved, get paid straight to your wallet.</p>
           <hr>
           <a class="cta" href="${deeplink}">Open in Nimiq Pay</a>

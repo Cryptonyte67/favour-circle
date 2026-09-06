@@ -299,7 +299,7 @@ function renderOnboarding(): HTMLElement {
     el(
       'p',
       { class: 'muted' },
-      'Post a small job to your family, friends or neighbours. They do it, you approve, they get paid.',
+      'Post a favour to your family, friends or neighbours. They do it, you approve, they get paid.',
     ),
   );
 
@@ -557,7 +557,7 @@ function postFavourSheet() {
     circleBox.append(el('div', { class: 'check' }, input, label));
   }
 
-  const submit = el('button', { class: 'primary' }, 'Post favour');
+  const submit = el('button', { class: 'primary' }, 'Post a favour');
   submit.onclick = () =>
     guard(async () => {
       const resolved = resolveAmount();
