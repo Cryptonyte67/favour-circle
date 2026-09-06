@@ -82,7 +82,7 @@ function shell(opts: {
 function missing(message: string): Response {
   const body = `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Not found — Favour</title>
+<title>Not found | Favour</title>
 <style>
   :root { color-scheme: light dark; }
   body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
@@ -262,7 +262,7 @@ approved, get paid straight to your wallet.</p>
       '</style></head><body><div class="w">',
       '<h1>Open Favour in Nimiq Pay</h1>',
       '<p>Needs Nimiq Pay installed on this device. Without it you will be sent',
-      'to the App Store &mdash; that is the intended fallback, not an error.</p>',
+      'to the App Store. That is the intended fallback, not an error.</p>',
       '<a class="primary" href="' + universal + '">Open in Nimiq Pay</a>',
       '<a class="ghost" href="' + scheme + '">Try nimiqpay:// scheme</a>',
       '<a class="ghost" href="/diag">Diagnostics in this browser (no wallet)</a>',
@@ -287,8 +287,8 @@ approved, get paid straight to your wallet.</p>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Getting paid in crypto — Favour</title>
-<meta property="og:title" content="Getting paid in crypto — what you can actually do with it">
+<title>Getting paid in crypto | Favour</title>
+<meta property="og:title" content="Getting paid in crypto: what you can actually do with it">
 <meta property="og:description" content="A plain explanation for people who have never held crypto before.">
 <style>
   :root { color-scheme: light dark; --bg:#f6f7f9; --card:#fff; --ink:#14161a;
@@ -336,7 +336,7 @@ worth knowing why before you count on it.</p>
 <h2>Converting to normal money</h2>
 <p>Nimiq Pay is a payments app. <strong>It cannot turn your balance into cash for
 you</strong>, and neither can Favour. To convert, you use a separate
-service — usually a crypto exchange — which typically means:</p>
+service, usually a crypto exchange, which typically means:</p>
 <ul>
   <li>Creating an account and <strong>verifying your identity</strong> with a photo ID</li>
   <li>Sending your USDT or NIM from Nimiq Pay to that account</li>
@@ -354,8 +354,8 @@ Spending it or letting it build up first usually makes more sense.</p>
 
 <h2>What is available depends on where you live</h2>
 <p>Which services work, what they charge, and what is legally permitted vary a
-lot by country. We deliberately do not recommend a particular service here —
-we cannot know what is available or appropriate where you are.</p>
+lot by country. We deliberately do not recommend a particular service here,
+because we cannot know what is available or appropriate where you are.</p>
 <p>Nimiq runs its own service called <strong>OASIS</strong> for swapping directly with a bank
 account. Two limits worth knowing: it covers <strong>NIM and BTC, not USDT</strong>, and it
 needs a euro bank account supporting SEPA Instant, so it is Europe-focused.</p>
@@ -367,7 +367,7 @@ readily spend or convert is a bad trade, however good the rate looks.</p>
 
 <footer>
 <p>General information only, not financial advice. Favour never holds,
-converts or has access to your money — payments go straight between wallets.</p>
+converts or has access to your money. Payments go straight between wallets.</p>
 <p><a href="/">Back to Favour</a></p>
 </footer>
 
@@ -412,7 +412,7 @@ converts or has access to your money — payments go straight between wallets.</
 <p style="opacity:.7;margin:0">Open this inside Nimiq Pay, tap every button, then Copy results.</p>
 
 <h2>Passive checks</h2><div id="passive"></div>
-<h2>Active checks — tap each</h2>
+<h2>Active checks: tap each</h2>
 <button id="b-share">Test navigator.share</button>
 <button id="b-clip">Test clipboard write</button>
 <a class="btn" id="b-sms" href="sms:&amp;body=Favour%20Circle%20test">Test sms: with &amp; (iOS form)</a>
@@ -442,7 +442,7 @@ function row(host,k,v){ var cls = v===true?'yes':v===false?'no':'idk';
 
 // A WKWebView omits "Version/" and "Safari/" from its user agent; mobile
 // Safari includes both. Combined with whether a wallet was injected, that is
-// enough to tell someone plainly whether they are in the right place — running
+// enough to tell someone plainly whether they are in the right place. Running
 // this in Safari looks identical to a broken wallet otherwise.
 (function(){
   var box = document.getElementById('context');
@@ -451,7 +451,7 @@ function row(host,k,v){ var cls = v===true?'yes':v===false?'no':'idk';
   var hasWallet = !!(window.nimiq || window.ethereum);
   if (hasWallet) {
     box.className = 'good';
-    box.innerHTML = 'Running inside Nimiq Pay &mdash; wallet detected.' +
+    box.innerHTML = 'Running inside Nimiq Pay. Wallet detected.' +
       '<small>This is the run that matters. Tap every button below.</small>';
   } else if (looksLikeSafari) {
     box.className = 'bad';
@@ -513,8 +513,8 @@ document.getElementById('b-clip').onclick = function(){
     .then(function(){ set('clipboardResult','worked'); })
     .catch(function(e){ set('clipboardResult', e.name + ': ' + e.message); });
 };
-document.getElementById('b-sms').addEventListener('click', function(){ set('smsAmpersandTapped','tapped — did the composer open?'); });
-document.getElementById('b-sms2').addEventListener('click', function(){ set('smsQuestionTapped','tapped — did the composer open?'); });
+document.getElementById('b-sms').addEventListener('click', function(){ set('smsAmpersandTapped','tapped. Did the composer open?'); });
+document.getElementById('b-sms2').addEventListener('click', function(){ set('smsQuestionTapped','tapped. Did the composer open?'); });
 document.getElementById('b-fetch').onclick = function(){
   // Exactly the URL the app builds, so a pass here means conversion will work.
   var u = 'https://api.coingecko.com/api/v3/simple/price?ids=nimiq-2,tether'

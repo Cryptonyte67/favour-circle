@@ -152,7 +152,7 @@ export async function sendReport(report: DiagnosticsReport): Promise<string> {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(report),
     });
-    return res.ok ? 'Sent — open /diag/results on your computer.' : 'Failed: HTTP ' + res.status;
+    return res.ok ? 'Sent. Open /diag/results on your computer.' : 'Failed: HTTP ' + res.status;
   } catch (err) {
     return 'Failed: ' + (err as Error).message;
   }

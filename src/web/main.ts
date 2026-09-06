@@ -251,7 +251,7 @@ function diagnosticsSheet() {
     'div',
     { class: 'diag-banner ' + (walletDetected() ? 'good' : 'bad') },
     walletDetected()
-      ? 'Wallet detected — this run counts.'
+      ? 'Wallet detected. This run counts.'
       : 'No wallet injected here. If this is Nimiq Pay, it exposed nothing.',
   );
 
@@ -845,7 +845,7 @@ function walletPrompt(): HTMLElement | null {
 function shareSheet(title: string, url: string, subject: string) {
   const body = el('div', {});
   const caps = capabilities();
-  const message = subject + ' — ' + url;
+  const message = subject + ': ' + url;
 
   const img = el('img', { class: 'qr', alt: 'QR code for ' + url });
   void qrDataUrl(url).then((data) => (img.src = data));
