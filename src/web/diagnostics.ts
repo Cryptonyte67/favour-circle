@@ -138,7 +138,7 @@ export async function probeClipboard(): Promise<string> {
 export async function probeShare(): Promise<string> {
   if (typeof navigator.share !== 'function') return 'absent';
   try {
-    await navigator.share({ title: 'Favour Circle', text: 'test', url: location.origin });
+    await navigator.share({ title: 'Favour', text: 'test', url: location.origin });
     return 'worked';
   } catch (err) {
     return (err as Error).name + ': ' + (err as Error).message;

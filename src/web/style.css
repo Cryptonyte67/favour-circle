@@ -331,3 +331,24 @@ textarea { min-height: 76px; resize: vertical; }
 .brand h1 { margin: 0; }
 .brand-lg { justify-content: center; margin-bottom: 10px; }
 .logo { display: inline-flex; line-height: 0; color: var(--ink); }
+
+/* Tabs take the logo's three arc colours, in the order the arcs are drawn.
+   Inactive tabs stay muted so the colour marks the current place rather than
+   decorating the whole row. */
+.tab { position: relative; }
+.tab.on { color: var(--ink); }
+.tab.on::after {
+  content: '';
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: 4px;
+  height: 3px;
+  border-radius: 2px;
+}
+.tab-favours.on { color: var(--family); }
+.tab-favours.on::after { background: var(--family); }
+.tab-circles.on { color: var(--friends); }
+.tab-circles.on::after { background: var(--friends); }
+.tab-owed.on { color: var(--community); }
+.tab-owed.on::after { background: var(--community); }

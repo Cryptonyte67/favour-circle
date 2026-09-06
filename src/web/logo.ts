@@ -30,15 +30,18 @@ export function logoSvg(options: LogoOptions = {}): string {
   ];
   const tick = options.tick ?? 'currentColor';
 
-  // Three equal arcs with a small gap between each: circumference of r=27 is
-  // ~169.6, so 47 on / 9.5 off repeats cleanly three times.
-  const dash = '47 9.5';
+  // Each circle draws exactly ONE arc, not a repeating pattern. Circumference at
+  // r=27 is ~169.6; a 47-long dash followed by a 122.6 gap means the pattern
+  // never repeats within one revolution. The first version used "47 9.5", which
+  // repeats three times per circle — so all three colours drew all three arcs
+  // and the last one painted over the rest, leaving a single-colour ring.
+  const dash = '47 122.6';
   const bg = options.background
     ? `<circle cx="32" cy="32" r="32" fill="${options.background}"/>`
     : '';
 
   return `<svg viewBox="0 0 64 64" width="${size}" height="${size}" fill="none"
-  xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Favour Circle">
+  xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Favour">
   ${bg}
   <g stroke-width="6" stroke-linecap="round" stroke-dasharray="${dash}">
     <circle cx="32" cy="32" r="27" stroke="${a}" transform="rotate(-90 32 32)"/>

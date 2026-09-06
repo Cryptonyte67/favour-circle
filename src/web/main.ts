@@ -295,7 +295,7 @@ function renderOnboarding(): HTMLElement {
   const wrap = el('div', { class: 'card center' });
   wrap.append(
     el('div', { class: 'brand brand-lg' }, logoElement(56)),
-    el('h1', {}, 'Favour Circle'),
+    el('h1', {}, 'Favour'),
     el(
       'p',
       { class: 'muted' },
@@ -769,7 +769,7 @@ function renderOwed(): HTMLElement {
           'p',
           { class: 'note' },
           nameOf(bucket.doerId) +
-            ' has not added a wallet address yet, so this cannot be paid. Ask them to open Favour Circle and connect a wallet.',
+            ' has not added a wallet address yet, so this cannot be paid. Ask them to open Favour and connect a wallet.',
         ),
       );
       wrap.append(card);
@@ -787,7 +787,7 @@ function renderOwed(): HTMLElement {
           to: payTo.address,
           units: bucket.units,
           assetKey: bucket.assetKey,
-          memo: 'Favour Circle: ' + bucket.taskIds.length + ' favours',
+          memo: 'Favour: ' + bucket.taskIds.length + ' favours',
         });
         // The server re-derives this address and rejects a mismatch, so a bug
         // here cannot mark favours paid while the money went somewhere else.
@@ -962,7 +962,7 @@ function render() {
   };
 
   const header = el('header', {},
-    el('div', { class: 'brand' }, logoElement(24), el('h1', {}, 'Favour Circle')),
+    el('div', { class: 'brand' }, logoElement(24), el('h1', {}, 'Favour')),
     el('div', { class: 'row', style: 'gap:10px' },
       el('span', { class: 'muted small' }, wallet.isReal ? 'Nimiq Pay' : 'Mock wallet'),
       currencySelect,
@@ -978,7 +978,14 @@ function render() {
     ['owed', owedCount ? 'Owed (' + owedCount + ')' : 'Owed'],
   ];
   for (const [id, label] of defs) {
-    const tab = el('button', { class: 'tab' + (state.tab === id ? ' on' : '') }, label);
+    // Each tab takes one of the logo's three arc colours, in the same order.
+    // Those hues also identify circle kinds elsewhere; the two never appear
+    // side by side, so the tie to the mark is worth the small overlap.
+    const tab = el(
+      'button',
+      { class: 'tab tab-' + id + (state.tab === id ? ' on' : '') },
+      label,
+    );
     tab.onclick = () => {
       state.tab = id;
       render();

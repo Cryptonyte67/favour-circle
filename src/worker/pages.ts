@@ -65,7 +65,7 @@ function shell(opts: {
 <body>
   <div class="wrap">
     <div class="card">${opts.body}</div>
-    <footer>Favour Circle &middot; a Nimiq Pay Mini App</footer>
+    <footer>Favour &middot; a Nimiq Pay Mini App</footer>
   </div>
 </body>
 </html>`;
@@ -82,7 +82,7 @@ function shell(opts: {
 function missing(message: string): Response {
   const body = `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Not found — Favour Circle</title>
+<title>Not found — Favour</title>
 <style>
   :root { color-scheme: light dark; }
   body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
@@ -95,7 +95,7 @@ function missing(message: string): Response {
 </style></head><body><div class="w">
 <h1>${message}</h1>
 <p>The link may have expired, or the favour may have been cancelled.</p>
-<a href="/">Open Favour Circle</a>
+<a href="/">Open Favour</a>
 </div></body></html>`;
   return new Response(body, {
     status: 404,
@@ -164,7 +164,7 @@ export function createPages() {
     const deeplink = deeplinkFor(c.env.APP_URL, c.req.url, `/#/join/${circle.inviteCode}`);
     return c.html(
       shell({
-        title: `Join ${circle.name} on Favour Circle`,
+        title: `Join ${circle.name} on Favour`,
         description: `A ${circle.kind} circle. Post favours, get them done, pay instantly.`,
         deeplink,
         body: html`
@@ -260,7 +260,7 @@ approved, get paid straight to your wallet.</p>
       '.ghost{border:1px solid rgba(128,128,128,.45);color:inherit}',
       'code{font-size:12px;word-break:break-all;opacity:.55;display:block;margin-top:18px}',
       '</style></head><body><div class="w">',
-      '<h1>Open Favour Circle in Nimiq Pay</h1>',
+      '<h1>Open Favour in Nimiq Pay</h1>',
       '<p>Needs Nimiq Pay installed on this device. Without it you will be sent',
       'to the App Store &mdash; that is the intended fallback, not an error.</p>',
       '<a class="primary" href="' + universal + '">Open in Nimiq Pay</a>',
@@ -287,7 +287,7 @@ approved, get paid straight to your wallet.</p>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Getting paid in crypto — Favour Circle</title>
+<title>Getting paid in crypto — Favour</title>
 <meta property="og:title" content="Getting paid in crypto — what you can actually do with it">
 <meta property="og:description" content="A plain explanation for people who have never held crypto before.">
 <style>
@@ -335,7 +335,7 @@ worth knowing why before you count on it.</p>
 
 <h2>Converting to normal money</h2>
 <p>Nimiq Pay is a payments app. <strong>It cannot turn your balance into cash for
-you</strong>, and neither can Favour Circle. To convert, you use a separate
+you</strong>, and neither can Favour. To convert, you use a separate
 service — usually a crypto exchange — which typically means:</p>
 <ul>
   <li>Creating an account and <strong>verifying your identity</strong> with a photo ID</li>
@@ -366,9 +366,9 @@ in your country <em>first</em>. Agreeing to do something for crypto you cannot
 readily spend or convert is a bad trade, however good the rate looks.</p>
 
 <footer>
-<p>General information only, not financial advice. Favour Circle never holds,
+<p>General information only, not financial advice. Favour never holds,
 converts or has access to your money — payments go straight between wallets.</p>
-<p><a href="/">Back to Favour Circle</a></p>
+<p><a href="/">Back to Favour</a></p>
 </footer>
 
 </div></body></html>`),
@@ -388,7 +388,7 @@ converts or has access to your money — payments go straight between wallets.</
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Favour Circle diagnostics</title>
+<title>Favour diagnostics</title>
 <style>
   :root { color-scheme: light dark; }
   body { margin:0; padding:16px; font:15px/1.5 -apple-system,system-ui,sans-serif; max-width:520px; }
@@ -407,7 +407,7 @@ converts or has access to your money — payments go straight between wallets.</
   #context.bad { background:#c33; color:#fff; }
   #context small { display:block; font-weight:400; opacity:.9; margin-top:4px; }
 </style></head><body>
-<h1>Favour Circle diagnostics</h1>
+<h1>Favour diagnostics</h1>
 <div id="context"></div>
 <p style="opacity:.7;margin:0">Open this inside Nimiq Pay, tap every button, then Copy results.</p>
 
@@ -457,7 +457,7 @@ function row(host,k,v){ var cls = v===true?'yes':v===false?'no':'idk';
     box.className = 'bad';
     box.innerHTML = 'This is Safari, not Nimiq Pay.' +
       '<small>No wallet here, so the wallet tests cannot answer anything. ' +
-      'Open Favour Circle inside Nimiq Pay and tap "Run capability diagnostics".</small>';
+      'Open Favour inside Nimiq Pay and tap "Run capability diagnostics".</small>';
   } else {
     box.className = 'bad';
     box.innerHTML = 'No wallet detected.' +
@@ -503,7 +503,7 @@ draw();
 
 document.getElementById('b-share').onclick = function(){
   if(!navigator.share) return set('shareResult','absent');
-  navigator.share({title:'Favour Circle',text:'test',url:location.origin})
+  navigator.share({title:'Favour',text:'test',url:location.origin})
     .then(function(){ set('shareResult','worked'); })
     .catch(function(e){ set('shareResult', e.name + ': ' + e.message); });
 };
