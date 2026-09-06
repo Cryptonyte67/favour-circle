@@ -8,10 +8,12 @@
  *     a "≈", because the rate at settlement will not be the rate at posting.
  *  2. **It can never break the app.** This is a network call inside a WebView
  *     that may not permit outbound fetches at all. Every failure path returns
- *     null and the UI simply omits the line. Reliability is 45 points; a price
- *     API must never be able to stop a chore from rendering.
- *  3. **USD is not offered for USDT.** A stablecoin priced in dollars reads
- *     "1.00 USDT ≈ $1.00", which is noise. The value is in local currency.
+ *     null and the UI carries on. Reliability is 45 points; a price API must
+ *     never be able to stop a chore from rendering.
+ *  3. **Failure is visible, not silent.** A blocked fetch used to render an
+ *     empty space, which is indistinguishable from having no feature at all —
+ *     and that is exactly how it got reported. `ratesAreUnavailable()` lets the
+ *     UI say so.
  */
 
 import { ASSETS } from '../shared/types.js';
@@ -124,9 +126,13 @@ export async function loadRates(): Promise<RateTable | null> {
       if (!res.ok) throw new Error('rates ' + res.status);
       const body = (await res.json()) as RateTable;
       writeCache(body);
+      ratesUnavailable = false;
       return body;
     } catch (err) {
+      // Silence here was the problem: a blocked fetch inside a WebView looked
+      // identical to "this app has no conversion feature".
       console.warn('[prices] unavailable, continuing without fiat', err);
+      ratesUnavailable = true;
       return cached?.rates ?? null;
     } finally {
       inFlight = null;
@@ -136,17 +142,55 @@ export async function loadRates(): Promise<RateTable | null> {
   return inFlight;
 }
 
+/** True once a rate load has been attempted and produced nothing usable. */
+let ratesUnavailable = false;
+
+export function ratesAreUnavailable(): boolean {
+  return ratesUnavailable && !readCache();
+}
+
 /**
- * "≈ ₱78.33", or null when there is nothing trustworthy to show.
+ * "≈ ₱78.33", or null when there is no rate to work from.
  *
- * Returns null for USDT priced in USD: a stablecoin quoted in dollars tells the
- * reader nothing they did not already know.
+ * An earlier version suppressed USDT priced in USD on the grounds that "≈ $1.00"
+ * for a dollar stablecoin tells the reader nothing. That was clever and wrong:
+ * to anyone whose currency resolves to USD it just looks like the converter is
+ * broken, which is precisely how it was reported. Predictable beats clever, so
+ * it now converts everything.
  */
+/** The rate for one unit of `assetKey` in `currency`, or null if unknown. */
+export function rateFor(assetKey: string, currency: Currency): number | null {
+  const id = COINGECKO_IDS[assetKey];
+  if (!id) return null;
+  const rate = readCache()?.rates?.[id]?.[currency.toLowerCase()];
+  return typeof rate === 'number' && isFinite(rate) && rate > 0 ? rate : null;
+}
+
+/**
+ * Convert an amount typed in fiat into a decimal amount of `assetKey`.
+ *
+ * Returns a string with exactly the asset's precision, ready for parseDecimal.
+ * The chore is still denominated in crypto — this only decides the number. The
+ * rate at settlement will differ from the rate now, which is why fiat entry is
+ * pinned to a stablecoin rather than to NIM.
+ */
+export function fiatToAssetAmount(
+  assetKey: string,
+  fiat: string,
+  currency: Currency,
+): string | null {
+  const spec = ASSETS[assetKey];
+  const rate = rateFor(assetKey, currency);
+  if (!spec || rate === null) return null;
+  const value = Number(fiat);
+  if (!isFinite(value) || value <= 0) return null;
+  return (value / rate).toFixed(spec.decimals);
+}
+
 export function approxFiat(assetKey: string, units: string, currency: Currency): string | null {
   const spec = ASSETS[assetKey];
   const id = COINGECKO_IDS[assetKey];
   if (!spec || !id) return null;
-  if (id === 'tether' && currency === 'USD') return null;
 
   const rates = readCache()?.rates;
   const rate = rates?.[id]?.[currency.toLowerCase()];

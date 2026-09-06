@@ -12,11 +12,23 @@ import {
   type WalletAddress,
 } from '../shared/types.js';
 import { formatMoney, formatUnits, parseDecimal } from '../shared/money.js';
-import { capabilities, copyToClipboard, inviteUrl, qrDataUrl, smsHref, taskUrl, tryWebShare } from './share.js';
+import {
+  capabilities,
+  copyToClipboard,
+  inviteUrl,
+  qrDataUrl,
+  smsHref,
+  taskUrl,
+  tryWebShare,
+  watchSmsHandoff,
+} from './share.js';
 import {
   approxFiat,
   detectCurrency,
+  fiatToAssetAmount,
+  rateFor,
   loadRates,
+  ratesAreUnavailable,
   storeCurrency,
   CURRENCIES,
   type Currency,
@@ -160,6 +172,25 @@ function openSheet(title: string, body: HTMLElement) {
   };
   document.body.append(sheet);
   return sheet;
+}
+
+/**
+ * Shown on every screen, onboarding included.
+ *
+ * It used to be appended only after the signed-in branch, which put the crypto
+ * explainer behind a sign-up — exactly the wrong side of the door for the
+ * person who most needs it.
+ */
+function appFooter(): HTMLElement {
+  return el(
+    'footer',
+    { class: 'app-footer muted small center' },
+    el(
+      'a',
+      { href: '/help/cash-out', class: 'muted' },
+      'New to crypto? What your earnings are and what to do with them',
+    ),
+  );
 }
 
 /* ------------------------------ onboarding --------------------------- */
@@ -365,21 +396,54 @@ function postChoreSheet() {
   const detail = el('textarea', { placeholder: 'Any detail (optional)', rows: '3' });
   const amount = el('input', { placeholder: '2.50', inputmode: 'decimal' });
 
-  let assetKey = DEFAULT_ASSET_KEY;
+  // Three ways to price a chore: in NIM, in USDT, or in the viewer's own
+  // currency. The last is how people actually think — "I'll pay three pounds
+  // for this" — so it exists alongside the crypto assets rather than as a
+  // read-only conversion underneath them.
+  //
+  // Fiat entry settles in USDT, never NIM. A chore posted as "£3" and paid a
+  // week later in NIM could be worth noticeably more or less; pinned to a
+  // stablecoin it stays roughly £3, which is what the poster meant.
+  const FIAT_MODE = 'FIAT';
+  const FIAT_SETTLES_IN = 'USDT@polygon';
+
+  let mode: string = DEFAULT_ASSET_KEY;
   const assetPicker = el('div', { class: 'filters' });
   const assetChips: HTMLButtonElement[] = [];
-  for (const key of SELECTABLE_ASSET_KEYS) {
-    const spec = ASSETS[key];
-    if (!spec) continue;
-    const chip = el('button', { class: 'chip' + (key === assetKey ? ' on' : '') }, spec.symbol);
+
+  const chipFor = (key: string, label: string) => {
+    const chip = el('button', { class: 'chip' + (key === mode ? ' on' : '') }, label);
     chip.onclick = () => {
-      assetKey = key;
+      if (chip.hasAttribute('disabled')) return;
+      mode = key;
       for (const other of assetChips) other.classList.remove('on');
       chip.classList.add('on');
+      updatePreview();
     };
     assetChips.push(chip);
     assetPicker.append(chip);
+    return chip;
+  };
+
+  for (const key of SELECTABLE_ASSET_KEYS) {
+    const spec = ASSETS[key];
+    if (spec) chipFor(key, spec.symbol);
   }
+
+  // Only offered when a rate is actually available; without one there is no
+  // honest way to turn a fiat figure into an amount of crypto.
+  const fiatChip = chipFor(FIAT_MODE, state.currency);
+  if (rateFor(FIAT_SETTLES_IN, state.currency) === null) {
+    fiatChip.setAttribute('disabled', 'disabled');
+    fiatChip.title = 'Exchange rate unavailable';
+  }
+
+  /** What this chore will actually be posted as, given the current mode. */
+  const resolveAmount = (): { assetKey: string; amount: string } | null => {
+    if (mode !== FIAT_MODE) return { assetKey: mode, amount: amount.value };
+    const converted = fiatToAssetAmount(FIAT_SETTLES_IN, amount.value, state.currency);
+    return converted ? { assetKey: FIAT_SETTLES_IN, amount: converted } : null;
+  };
 
   const circleBox = el('div', { class: 'checks' });
   const chosen = new Set<Id>();
@@ -394,11 +458,13 @@ function postChoreSheet() {
   const submit = el('button', { class: 'primary' }, 'Post chore');
   submit.onclick = () =>
     guard(async () => {
+      const resolved = resolveAmount();
+      if (!resolved) throw new Error('No exchange rate available, so that amount cannot be posted.');
       const { task } = await api.createTask({
         title: title.value,
         detail: detail.value,
-        amount: amount.value,
-        assetKey,
+        amount: resolved.amount,
+        assetKey: resolved.assetKey,
         circleIds: [...chosen],
       });
       sheet.remove();
@@ -410,24 +476,41 @@ function postChoreSheet() {
   // Live indicative value while typing, so the poster knows what they are
   // actually offering. Silent when rates are unavailable.
   const preview = el('p', { class: 'muted small', style: 'margin:6px 0 0' }, '');
-  const updatePreview = () => {
+  function updatePreview() {
     preview.textContent = '';
+    if (!amount.value.trim()) return;
+
+    if (mode === FIAT_MODE) {
+      const converted = fiatToAssetAmount(FIAT_SETTLES_IN, amount.value, state.currency);
+      if (!converted) {
+        preview.textContent = 'Exchange rate unavailable';
+        return;
+      }
+      // Format through the same path the chore card uses. Hand-trimming the
+      // decimal string here produced a preview that disagreed with the posted
+      // amount, which is worse than no preview at all.
+      try {
+        const units = parseDecimal(FIAT_SETTLES_IN, converted);
+        preview.textContent = 'Posted as ' + formatMoney({ assetKey: FIAT_SETTLES_IN, units });
+      } catch {
+        preview.textContent = '';
+      }
+      return;
+    }
+
+    if (ratesAreUnavailable()) {
+      preview.textContent = 'Conversion unavailable right now';
+      return;
+    }
     try {
-      const units = parseDecimal(assetKey, amount.value || '0');
-      const fiat = approxFiat(assetKey, units, state.currency);
+      const units = parseDecimal(mode, amount.value || '0');
+      const fiat = approxFiat(mode, units, state.currency);
       if (fiat && units !== '0') preview.textContent = fiat;
     } catch {
       // Mid-typing values are often invalid; showing nothing is correct.
     }
-  };
-  amount.oninput = updatePreview;
-  for (const chip of assetChips) {
-    const previous = chip.onclick;
-    chip.onclick = (e) => {
-      previous?.call(chip, e);
-      updatePreview();
-    };
   }
+  amount.oninput = updatePreview;
 
   body.append(
     el('label', { class: 'field-label' }, 'Chore'),
@@ -689,8 +772,21 @@ function shareSheet(title: string, url: string, subject: string) {
     buttons.append(copy);
   }
 
-  const sms = el('a', { class: 'button ghost', href: smsHref(message) }, 'Send as a text');
-  buttons.append(sms);
+  if (caps.sms) {
+    // A genuine anchor, not a scripted navigation. WKWebView blocks
+    // location.href to non-http schemes but honours a tapped link — which is
+    // why the same sms: URL works on the /diag page and did not here.
+    const sms = el('a', { class: 'button ghost', href: smsHref(message) }, 'Send as a text');
+    sms.addEventListener('click', () => {
+      void watchSmsHandoff().then((opened) => {
+        if (!opened) {
+          sms.remove();
+          notify('error', 'This app cannot open the messages composer. Use Copy link instead.');
+        }
+      });
+    });
+    buttons.append(sms);
+  }
 
   body.append(buttons);
 
@@ -747,7 +843,7 @@ function render() {
   }
 
   if (!state.userId) {
-    root.append(renderOnboarding());
+    root.append(renderOnboarding(), appFooter());
     return;
   }
 
@@ -803,13 +899,7 @@ function render() {
     root.append(fab);
   }
 
-  root.append(
-    el(
-      'footer',
-      { class: 'app-footer muted small center' },
-      el('a', { href: '/help/cash-out', class: 'muted' }, 'New to crypto? What your earnings are and what to do with them'),
-    ),
-  );
+  root.append(appFooter());
 
   if (state.busy) root.append(el('div', { class: 'busy' }));
 }

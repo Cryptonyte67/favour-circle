@@ -106,8 +106,18 @@ function missing(message: string): Response {
 export function createPages() {
   const pages = new Hono<{ Bindings: Env }>();
 
-  /** Deeplink that opens this mini app inside Nimiq Pay. */
-  const deeplinkFor = (appUrl: string, path: string) => {
+  /**
+   * Deeplink that opens this mini app inside Nimiq Pay.
+   *
+   * Prefers the configured APP_URL, but ignores it when it points at localhost
+   * and the request arrived on a real host. That is what makes a tunnel work
+   * with no config change: a localhost APP_URL otherwise produces a deeplink
+   * that is syntactically valid and completely useless on a phone.
+   */
+  const deeplinkFor = (configured: string | undefined, requestUrl: string, path: string) => {
+    const isLocal = (u: string) => /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(u);
+    const appUrl =
+      configured && !isLocal(configured) ? configured : new URL(requestUrl).origin;
     const host = appUrl.replace(/^https?:\/\//, '');
     return `https://nimpay.app/miniapps/open/${host}${path}`;
   };
@@ -121,7 +131,7 @@ export function createPages() {
     const posterName = poster ? poster.displayName : 'Someone';
     const reward = formatMoney(task.reward);
     const status = STATUS_LABEL[task.status] ?? task.status;
-    const deeplink = deeplinkFor(c.env.APP_URL || new URL(c.req.url).origin, `/#/task/${task.id}`);
+    const deeplink = deeplinkFor(c.env.APP_URL, c.req.url, `/#/task/${task.id}`);
     const open = task.status === 'open';
 
     return c.html(
@@ -151,10 +161,7 @@ export function createPages() {
     const circle = await new Repo(c.env.DB).circleByCode(code);
     if (!circle) return missing('This invite is not valid');
 
-    const deeplink = deeplinkFor(
-      c.env.APP_URL || new URL(c.req.url).origin,
-      `/#/join/${circle.inviteCode}`,
-    );
+    const deeplink = deeplinkFor(c.env.APP_URL, c.req.url, `/#/join/${circle.inviteCode}`);
     return c.html(
       shell({
         title: `Join ${circle.name} on Chore Circle`,
@@ -175,6 +182,52 @@ approved, get paid straight to your wallet.</p>
   });
 
   /**
+   * Launcher, for opening this app inside Nimiq Pay during development.
+   *
+   * The documented HTTPS deeplink (nimpay.app/miniapps/open/...) is an iOS
+   * universal link, and universal links are sticky: once opened in Safari, iOS
+   * remembers that choice and stops handing it to the app, so it falls through
+   * to the web page and on to the App Store. Nothing about the app is wrong
+   * when that happens, and it cannot be reset from here.
+   *
+   * The custom scheme has no such behaviour, so it is offered first.
+   */
+  pages.get('/open', (c) => {
+    const host = new URL(c.req.url).host;
+
+    // On a phone with Nimiq Pay installed this opens the app directly. On one
+    // without it, iOS falls back to the web page and on to the App Store —
+    // which is correct behaviour, not a broken link, and is exactly what an
+    // invited person without the app will experience.
+    const universal = 'https://nimpay.app/miniapps/open/' + host;
+    const scheme = 'nimiqpay://miniapp?url=' + host;
+
+    return c.html([
+      '<!doctype html><html lang="en"><head><meta charset="utf-8">',
+      '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
+      '<title>Open in Nimiq Pay</title>',
+      '<style>',
+      ':root{color-scheme:light dark}',
+      'body{margin:0;padding:24px 16px;font:16px/1.55 -apple-system,system-ui,sans-serif}',
+      '.w{max-width:420px;margin:0 auto}',
+      'h1{font-size:20px;margin:0 0 4px}',
+      'p{opacity:.7;margin:0 0 18px;font-size:14px}',
+      'a{display:block;padding:15px;margin:10px 0;border-radius:12px;text-align:center;',
+      'text-decoration:none;font-weight:650}',
+      '.primary{background:#00b78a;color:#fff}',
+      '.ghost{border:1px solid rgba(128,128,128,.45);color:inherit}',
+      'code{font-size:12px;word-break:break-all;opacity:.55;display:block;margin-top:18px}',
+      '</style></head><body><div class="w">',
+      '<h1>Open Chore Circle in Nimiq Pay</h1>',
+      '<p>Needs Nimiq Pay installed on this device. Without it you will be sent',
+      'to the App Store &mdash; that is the intended fallback, not an error.</p>',
+      '<a class="primary" href="' + universal + '">Open in Nimiq Pay</a>',
+      '<a class="ghost" href="' + scheme + '">Try nimiqpay:// scheme</a>',
+      '<a class="ghost" href="/diag">Diagnostics in this browser (no wallet)</a>',
+      '<code>' + host + '</code>',
+      '</div></body></html>',
+    ].join(''));
+  });  /**
    * Plain-language explainer for people who have never held crypto.
    *
    * Written to be honest rather than encouraging. Nimiq Pay is a payment app
@@ -315,9 +368,10 @@ converts or has access to your money — payments go straight between wallets.</
 <h2>Active checks — tap each</h2>
 <button id="b-share">Test navigator.share</button>
 <button id="b-clip">Test clipboard write</button>
-<a class="btn" id="b-sms" href="sms:&amp;body=Chore%20Circle%20test">Test sms: link</a>
+<a class="btn" id="b-sms" href="sms:&amp;body=Chore%20Circle%20test">Test sms: with &amp; (iOS form)</a>
+<a class="btn" id="b-sms2" href="sms:?body=Chore%20Circle%20test">Test sms: with ? (Android form)</a>
 <a class="btn" href="https://nimiq.com" target="_blank" rel="noopener">Test external link</a>
-<button id="b-fetch">Test outbound fetch (price API)</button>
+<button id="b-fetch">Test price API (drives currency conversion)</button>
 <button id="b-accounts">Test wallet getAccounts</button>
 <button id="b-sign">Test signMessage</button>
 <h2>Results</h2>
@@ -346,6 +400,15 @@ results.secureContext = isSecureContext;
 results.nimiq = { present: !!window.nimiq, methods: methodsOf(window.nimiq) };
 results.ethereum = { present: !!window.ethereum, methods: methodsOf(window.ethereum) };
 results.hasShare = typeof navigator.share === 'function';
+results.vendor = navigator.vendor || null;
+results.maxTouchPoints = navigator.maxTouchPoints;
+// The app picks the sms: separator from these. iOS needs "&", Android "?", and
+// a WebView with a custom UA silently gets it wrong.
+results.appleDetected = navigator.vendor === 'Apple Computer, Inc.'
+  || /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || /iPad|iPhone|iPod/.test(navigator.platform || '')
+  || ((navigator.platform || '') === 'MacIntel' && navigator.maxTouchPoints > 1);
+results.smsHrefAppWouldUse = 'sms:' + (results.appleDetected ? '&' : '?') + 'body=test';
 results.hasClipboard = !!(navigator.clipboard && navigator.clipboard.writeText);
 try { localStorage.setItem('_d','1'); localStorage.removeItem('_d'); results.localStorage = true; }
 catch(e){ results.localStorage = false; }
@@ -354,8 +417,12 @@ row(p,'secure context', results.secureContext);
 row(p,'window.nimiq', results.nimiq.present);
 row(p,'window.ethereum', results.ethereum.present);
 row(p,'navigator.share exists', results.hasShare);
+row(p,'detected as Apple WebKit', results.appleDetected);
+row(p,'sms separator the app uses', results.appleDetected ? '&  (iOS)' : '?  (Android)');
 row(p,'clipboard.writeText exists', results.hasClipboard);
+try { results.locale = navigator.language; results.region = new Intl.Locale(navigator.language).region || null; } catch(e) { results.region = 'ERR'; }
 row(p,'localStorage', results.localStorage);
+row(p,'locale / region', (results.locale||'?') + ' / ' + (results.region||'none'));
 row(p,'viewport', results.viewport);
 draw();
 
@@ -371,12 +438,17 @@ document.getElementById('b-clip').onclick = function(){
     .then(function(){ set('clipboardResult','worked'); })
     .catch(function(e){ set('clipboardResult', e.name + ': ' + e.message); });
 };
-document.getElementById('b-sms').addEventListener('click', function(){ set('smsTapped','tapped — did the composer open?'); });
+document.getElementById('b-sms').addEventListener('click', function(){ set('smsAmpersandTapped','tapped — did the composer open?'); });
+document.getElementById('b-sms2').addEventListener('click', function(){ set('smsQuestionTapped','tapped — did the composer open?'); });
 document.getElementById('b-fetch').onclick = function(){
-  fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd')
-    .then(function(r){ return r.json(); })
-    .then(function(j){ set('outboundFetch', j); })
-    .catch(function(e){ set('outboundFetch', 'BLOCKED: ' + e.message); });
+  // Exactly the URL the app builds, so a pass here means conversion will work.
+  var u = 'https://api.coingecko.com/api/v3/simple/price?ids=nimiq-2,tether'
+        + '&vs_currencies=usd,eur,gbp,php,aud,cad,inr,brl,ngn';
+  var t0 = Date.now();
+  fetch(u)
+    .then(function(r){ return r.text().then(function(b){ return { status: r.status, body: b.slice(0,200) }; }); })
+    .then(function(j){ set('priceApi', { ms: Date.now()-t0, status: j.status, body: j.body }); })
+    .catch(function(e){ set('priceApi', 'BLOCKED: ' + e.name + ': ' + e.message); });
 };
 document.getElementById('b-accounts').onclick = function(){
   var out = {};

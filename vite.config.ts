@@ -32,7 +32,7 @@ export default defineConfig({
         target: 'http://localhost:8787',
         changeOrigin: false,
       },
-      '^/diag': {
+      '^/(diag|open)': {
         target: 'http://localhost:8787',
         changeOrigin: false,
       },

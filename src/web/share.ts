@@ -29,23 +29,75 @@ export interface ShareCapabilities {
  * WebView, so treat the first real failure as the answer and stop offering it.
  */
 let webShareBroken = false;
+let smsBroken = false;
 
 export function capabilities(): ShareCapabilities {
   return {
     webShare: !webShareBroken && typeof navigator !== 'undefined' && 'share' in navigator,
     clipboard: typeof navigator !== 'undefined' && !!navigator.clipboard?.writeText,
-    // No feature test exists for URI-scheme handling. Offer it and let the user
-    // report; it degrades to nothing happening rather than to a broken state.
-    sms: true,
+    // Offered until proven otherwise — see trySms. Confirmed not to work inside
+    // Nimiq Pay's WebView on iOS, where nothing at all happens on tap.
+    sms: !smsBroken,
   };
 }
 
+/**
+ * Open the SMS composer, and work out whether that actually happened.
+ *
+ * There is no feature test for URI-scheme handling: `sms:` either hands off to
+ * the OS or silently does nothing, and a WebView gives no error either way. The
+ * only signal available is whether the page gets backgrounded — if the composer
+ * opened, this document is hidden or blurred within a moment. Still here after
+ * the timeout means nothing handled it.
+ *
+ * The heuristic can be wrong in one direction: a WebView that opens the
+ * composer without firing visibilitychange looks like a failure. That costs a
+ * working button; the reverse would leave a dead one on screen, which is worse.
+ */
+export function watchSmsHandoff(): Promise<boolean> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (opened: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onLeave);
+      window.removeEventListener('pagehide', onLeave);
+      window.removeEventListener('blur', onLeave);
+      if (!opened) smsBroken = true;
+      resolve(opened);
+    };
+
+    const onLeave = () => finish(true);
+    const timer = setTimeout(() => finish(false), 1500);
+
+    document.addEventListener('visibilitychange', onLeave);
+    window.addEventListener('pagehide', onLeave);
+    window.addEventListener('blur', onLeave);
+  });
+}
+
+/**
+ * iOS wants `sms:&body=`, Android wants `sms:?body=`, and neither reliably
+ * accepts the other.
+ *
+ * Detection deliberately does not rely on the user agent alone. An app
+ * embedding a WebView can set any UA it likes, and Nimiq Pay's does not
+ * necessarily contain "iPhone" — which silently produced the Android form on an
+ * iPhone, where it does nothing at all. `navigator.vendor` stays "Apple
+ * Computer, Inc." in WKWebView regardless of the UA, and touch-capable
+ * Macintosh covers iPads reporting as desktop.
+ */
+export function isAppleWebKit(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  if (navigator.vendor === 'Apple Computer, Inc.') return true;
+  if (/iPad|iPhone|iPod/.test(navigator.userAgent)) return true;
+  const platform = (navigator as Navigator & { platform?: string }).platform ?? '';
+  return /iPad|iPhone|iPod/.test(platform) || (platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
 export function smsHref(body: string): string {
-  // iOS wants sms:&body=, Android wants sms:?body=. Both tolerate the other in
-  // most builds, but branching costs nothing.
-  const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
-  const separator = isApple ? '&' : '?';
-  return 'sms:' + separator + 'body=' + encodeURIComponent(body);
+  return 'sms:' + (isAppleWebKit() ? '&' : '?') + 'body=' + encodeURIComponent(body);
 }
 
 export async function tryWebShare(title: string, text: string, url: string): Promise<boolean> {
