@@ -10,9 +10,8 @@
 import { Hono } from 'hono';
 import { html, raw } from 'hono/html';
 import type { HtmlEscapedString } from 'hono/utils/html';
-import { projectTask } from '../shared/events.js';
 import { formatMoney } from '../shared/money.js';
-import { circleByCode, eventsForTask, userById, type Store } from './store.js';
+import { Repo, type Env } from './api-types.js';
 
 const STATUS_LABEL: Record<string, string> = {
   open: 'Up for grabs',
@@ -72,25 +71,57 @@ function shell(opts: {
 </html>`;
 }
 
-export function createPages(store: Store, appUrl: string) {
-  const pages = new Hono();
+/**
+ * A dead link deserves an explanation, not the app shell.
+ *
+ * These pages are shared into messengers and live for a long time; a chore gets
+ * cancelled, a circle gets deleted, someone mistypes a code. Returning the SPA
+ * with a 200 makes that look like the app is broken, and hides the 404 from
+ * anything checking links.
+ */
+function missing(message: string): Response {
+  const body = `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Not found — Chore Circle</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+         font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; padding:24px; text-align:center; }
+  .w { max-width:340px; }
+  h1 { font-size:20px; margin:0 0 8px; }
+  p { opacity:.7; margin:0 0 20px; }
+  a { display:inline-block; padding:12px 20px; border-radius:11px; background:#00b78a;
+      color:#fff; text-decoration:none; font-weight:650; }
+</style></head><body><div class="w">
+<h1>${message}</h1>
+<p>The link may have expired, or the chore may have been cancelled.</p>
+<a href="/">Open Chore Circle</a>
+</div></body></html>`;
+  return new Response(body, {
+    status: 404,
+    headers: { 'content-type': 'text/html; charset=UTF-8' },
+  });
+}
+
+export function createPages() {
+  const pages = new Hono<{ Bindings: Env }>();
 
   /** Deeplink that opens this mini app inside Nimiq Pay. */
-  const deeplinkFor = (path: string) => {
+  const deeplinkFor = (appUrl: string, path: string) => {
     const host = appUrl.replace(/^https?:\/\//, '');
     return `https://nimpay.app/miniapps/open/${host}${path}`;
   };
 
-  pages.get('/t/:id', (c) => {
-    const db = store.read();
-    const task = projectTask(eventsForTask(db, c.req.param('id')));
-    if (!task) return c.notFound();
+  pages.get('/t/:id', async (c) => {
+    const repo = new Repo(c.env.DB);
+    const task = await repo.taskById(c.req.param('id'));
+    if (!task) return missing('This chore does not exist');
 
-    const poster = userById(db, task.posterId);
+    const poster = await repo.userById(task.posterId);
     const posterName = poster ? poster.displayName : 'Someone';
     const reward = formatMoney(task.reward);
     const status = STATUS_LABEL[task.status] ?? task.status;
-    const deeplink = deeplinkFor(`/#/task/${task.id}`);
+    const deeplink = deeplinkFor(c.env.APP_URL || new URL(c.req.url).origin, `/#/task/${task.id}`);
     const open = task.status === 'open';
 
     return c.html(
@@ -115,12 +146,15 @@ export function createPages(store: Store, appUrl: string) {
     );
   });
 
-  pages.get('/join/:code', (c) => {
+  pages.get('/join/:code', async (c) => {
     const code = c.req.param('code');
-    const circle = circleByCode(store.read(), code);
-    if (!circle) return c.notFound();
+    const circle = await new Repo(c.env.DB).circleByCode(code);
+    if (!circle) return missing('This invite is not valid');
 
-    const deeplink = deeplinkFor(`/#/join/${circle.inviteCode}`);
+    const deeplink = deeplinkFor(
+      c.env.APP_URL || new URL(c.req.url).origin,
+      `/#/join/${circle.inviteCode}`,
+    );
     return c.html(
       shell({
         title: `Join ${circle.name} on Chore Circle`,

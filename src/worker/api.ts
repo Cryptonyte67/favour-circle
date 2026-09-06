@@ -9,7 +9,6 @@
  */
 
 import { Hono } from 'hono';
-import { randomUUID } from 'node:crypto';
 import type {
   Chain,
   Circle,
@@ -19,85 +18,52 @@ import type {
   Task,
   TaskEvent,
   User,
-  WalletAddress,
 } from '../shared/types.js';
 import { CIRCLE_KINDS, DEFAULT_ASSET_KEY } from '../shared/types.js';
 import { canApply, owedBuckets, projectTask } from '../shared/events.js';
 import { assetOf, isPositive, parseDecimal } from '../shared/money.js';
-import {
-  allTaskIds,
-  circleByCode,
-  circlesFor,
-  eventsForTask,
-  isMember,
-  makeInviteCode,
-  userById,
-  type Store,
-} from './store.js';
+import { makeInviteCode, Repo } from './repo.js';
+
+export interface Env {
+  DB: D1Database;
+  APP_URL?: string;
+  ASSETS?: { fetch(request: Request): Promise<Response> };
+}
 
 function bad(message: string, status = 400) {
   return Object.assign(new Error(message), { httpStatus: status });
 }
 
-interface HeaderCarrier {
-  req: { header(name: string): string | undefined };
-}
+const uuid = () => crypto.randomUUID();
 
-export function createApi(store: Store) {
-  const api = new Hono();
-
-  /** Resolve the caller from the X-User-Id header. */
-  const requireUser = (c: HeaderCarrier): User => {
-    const id = c.req.header('x-user-id');
-    const user = id ? userById(store.read(), id) : undefined;
-    if (!user) throw bad('Not signed in', 401);
-    return user;
-  };
-
-  const tasksVisibleTo = (userId: Id): Task[] => {
-    const db = store.read();
-    const myCircles = new Set(circlesFor(db, userId).map((c) => c.id));
-    const out: Task[] = [];
-    for (const taskId of allTaskIds(db)) {
-      const task = projectTask(eventsForTask(db, taskId));
-      if (!task) continue;
-      const visible =
-        task.posterId === userId ||
-        task.doerId === userId ||
-        task.circleIds.some((id) => myCircles.has(id));
-      if (visible) out.push(task);
-    }
-    return out.sort((a, b) => b.updatedAt - a.updatedAt);
-  };
-
-  const append = (event: TaskEvent) => {
-    store.mutate((db) => db.events.push(event));
-  };
-
-  const loadTask = (taskId: Id): Task => {
-    const task = projectTask(eventsForTask(store.read(), taskId));
-    if (!task) throw bad('No such chore', 404);
-    return task;
-  };
+export function createApi() {
+  const api = new Hono<{ Bindings: Env }>();
 
   /* ---------------------------- identity ---------------------------- */
 
   api.post('/session', async (c) => {
+    const repo = new Repo(c.env.DB);
     const body = await c.req.json<{ displayName?: string; address?: string; chain?: Chain }>();
     const displayName = (body.displayName || '').trim() || 'Someone';
     const user: User = {
-      id: randomUUID(),
+      id: uuid(),
       displayName,
-      addresses: body.address
-        ? [{ chain: body.chain || 'nimiq', address: body.address }]
-        : [],
+      addresses: body.address ? [{ chain: body.chain || 'nimiq', address: body.address }] : [],
       createdAt: Date.now(),
     };
-    store.mutate((db) => db.users.push(user));
+    await repo.createUser(user);
     return c.json({ user });
   });
 
-  api.get('/me', (c) => c.json({ user: requireUser(c) }));
+  /** Every authenticated route resolves the caller the same way. */
+  const requireUser = async (c: { env: Env; req: { header(n: string): string | undefined } }) => {
+    const id = c.req.header('x-user-id');
+    const user = id ? await new Repo(c.env.DB).userById(id) : null;
+    if (!user) throw bad('Not signed in', 401);
+    return user;
+  };
+
+  api.get('/me', async (c) => c.json({ user: await requireUser(c) }));
 
   /**
    * Register the address this person gets paid at, per chain.
@@ -107,47 +73,25 @@ export function createApi(store: Store) {
    * paid, which the Owed tab surfaces explicitly rather than guessing.
    */
   api.put('/me/addresses', async (c) => {
-    const user = requireUser(c);
+    const user = await requireUser(c);
+    const repo = new Repo(c.env.DB);
     const body = await c.req.json<{ chain?: Chain; address?: string }>();
     const address = (body.address || '').trim();
-    const chain = body.chain || 'nimiq';
     if (!address) throw bad('An address is required');
-
-    store.mutate((db) => {
-      const record = userById(db, user.id);
-      if (!record) return;
-      const existing = record.addresses.find((a) => a.chain === chain);
-      if (existing) existing.address = address;
-      else record.addresses.push({ chain, address });
-    });
-
-    return c.json({ user: userById(store.read(), user.id) });
+    await repo.setAddress(user.id, body.chain || 'nimiq', address);
+    return c.json({ user: await repo.userById(user.id) });
   });
-
-  const nameFor = (userId: Id): string => userById(store.read(), userId)?.displayName ?? 'That person';
-
-  /** The address a user can receive `assetKey` at, or null if they have none. */
-  const payoutAddressFor = (userId: Id, assetKey: string): WalletAddress | null => {
-    const user = userById(store.read(), userId);
-    if (!user) return null;
-    const { chain } = assetOf(assetKey);
-    return user.addresses.find((a) => a.chain === chain) ?? null;
-  };
 
   /* ----------------------------- circles ---------------------------- */
 
-  api.get('/circles', (c) => {
-    const user = requireUser(c);
-    const db = store.read();
-    const circles = circlesFor(db, user.id).map((circle) => ({
-      ...circle,
-      memberCount: db.memberships.filter((m) => m.circleId === circle.id).length,
-    }));
-    return c.json({ circles });
+  api.get('/circles', async (c) => {
+    const user = await requireUser(c);
+    return c.json({ circles: await new Repo(c.env.DB).circlesFor(user.id) });
   });
 
   api.post('/circles', async (c) => {
-    const user = requireUser(c);
+    const user = await requireUser(c);
+    const repo = new Repo(c.env.DB);
     const body = await c.req.json<{ name?: string; kind?: string }>();
     const name = (body.name || '').trim();
     if (!name) throw bad('Give the circle a name');
@@ -155,52 +99,46 @@ export function createApi(store: Store) {
     if (!kind) throw bad('Pick family, friends or community');
 
     const circle: Circle = {
-      id: randomUUID(),
+      id: uuid(),
       kind,
       name,
       inviteCode: makeInviteCode(),
       createdBy: user.id,
       createdAt: Date.now(),
     };
-    store.mutate((db) => {
-      db.circles.push(circle);
-      db.memberships.push({ circleId: circle.id, userId: user.id, joinedAt: Date.now() });
-    });
+    await repo.createCircle(circle);
     return c.json({ circle });
   });
 
   api.post('/circles/join', async (c) => {
-    const user = requireUser(c);
+    const user = await requireUser(c);
+    const repo = new Repo(c.env.DB);
     const body = await c.req.json<{ code?: string }>();
-    const circle = circleByCode(store.read(), body.code || '');
+    const circle = await repo.circleByCode(body.code || '');
     if (!circle) throw bad('That invite code does not match a circle', 404);
-    if (!isMember(store.read(), circle.id, user.id)) {
-      store.mutate((db) =>
-        db.memberships.push({ circleId: circle.id, userId: user.id, joinedAt: Date.now() }),
-      );
-    }
+    await repo.addMembership(circle.id, user.id);
     return c.json({ circle });
   });
 
   /* ------------------------------ chores ---------------------------- */
 
-  api.get('/tasks', (c) => {
-    const user = requireUser(c);
-    const db = store.read();
-    const tasks = tasksVisibleTo(user.id);
-    const names: Record<Id, string> = {};
-    for (const u of db.users) names[u.id] = u.displayName;
+  api.get('/tasks', async (c) => {
+    const user = await requireUser(c);
+    const repo = new Repo(c.env.DB);
+    const [tasks, names] = await Promise.all([repo.tasksVisibleTo(user.id), repo.displayNames()]);
 
-    const owed: ResolvedOwedBucket[] = owedBuckets(tasks).map((bucket) => ({
-      ...bucket,
-      payTo: payoutAddressFor(bucket.doerId, bucket.assetKey),
-    }));
+    const owed: ResolvedOwedBucket[] = [];
+    for (const bucket of owedBuckets(tasks)) {
+      const { chain } = assetOf(bucket.assetKey);
+      owed.push({ ...bucket, payTo: await repo.payoutAddress(bucket.doerId, chain) });
+    }
 
     return c.json({ tasks, names, owed });
   });
 
   api.post('/tasks', async (c) => {
-    const user = requireUser(c);
+    const user = await requireUser(c);
+    const repo = new Repo(c.env.DB);
     const body = await c.req.json<{
       title?: string;
       detail?: string;
@@ -224,13 +162,16 @@ export function createApi(store: Store) {
     }
     if (!isPositive(units)) throw bad('The reward has to be more than zero');
 
-    const circleIds = (body.circleIds || []).filter((id) => isMember(store.read(), id, user.id));
+    const circleIds: Id[] = [];
+    for (const id of body.circleIds || []) {
+      if (await repo.isMember(id, user.id)) circleIds.push(id);
+    }
     if (circleIds.length === 0) throw bad('Choose at least one circle to post to');
 
     const reward: Money = { assetKey, units };
-    const taskId = randomUUID();
-    append({
-      id: randomUUID(),
+    const taskId = uuid();
+    await repo.appendEvent({
+      id: uuid(),
       taskId,
       actorId: user.id,
       at: Date.now(),
@@ -240,11 +181,11 @@ export function createApi(store: Store) {
       reward,
       circleIds,
     });
-    return c.json({ task: loadTask(taskId) });
+    return c.json({ task: await repo.taskById(taskId) });
   });
 
   const base = (user: User, task: Task) => ({
-    id: randomUUID(),
+    id: uuid(),
     taskId: task.id,
     actorId: user.id,
     at: Date.now(),
@@ -254,33 +195,40 @@ export function createApi(store: Store) {
   const transition = (
     action: string,
     build: (args: { user: User; task: Task; body: Record<string, unknown> }) => TaskEvent,
-    guard: (args: { user: User; task: Task }) => string | null,
+    guard: (args: {
+      user: User;
+      task: Task;
+      repo: Repo;
+    }) => string | null | Promise<string | null>,
   ) => {
     api.post(`/tasks/:id/${action}`, async (c) => {
-      const user = requireUser(c);
-      const task = loadTask(c.req.param('id'));
+      const user = await requireUser(c);
+      const repo = new Repo(c.env.DB);
+      const task = await repo.taskById(c.req.param('id'));
+      if (!task) throw bad('No such chore', 404);
       const body = await c.req.json<Record<string, unknown>>().catch(() => ({}));
 
-      const problem = guard({ user, task });
+      const problem = await guard({ user, task, repo });
       if (problem) throw bad(problem, 403);
 
       const event = build({ user, task, body });
       if (!canApply(event.type, task.status)) {
         throw bad(`Cannot ${action} a chore that is ${task.status}`, 409);
       }
-      append(event);
-      return c.json({ task: loadTask(task.id) });
+      await repo.appendEvent(event);
+      return c.json({ task: await repo.taskById(task.id) });
     });
   };
 
   transition(
     'claim',
     ({ user, task }) => ({ ...base(user, task), type: 'task.claimed' }),
-    ({ user, task }) => {
+    async ({ user, task, repo }) => {
       if (task.posterId === user.id) return 'You cannot claim your own chore';
-      const db = store.read();
-      const shared = task.circleIds.some((id) => isMember(db, id, user.id));
-      return shared ? null : 'That chore is not posted to any of your circles';
+      for (const id of task.circleIds) {
+        if (await repo.isMember(id, user.id)) return null;
+      }
+      return 'That chore is not posted to any of your circles';
     },
   );
 
@@ -319,7 +267,8 @@ export function createApi(store: Store) {
    * txHash back and every task in the batch is marked settled against it.
    */
   api.post('/settle', async (c) => {
-    const user = requireUser(c);
+    const user = await requireUser(c);
+    const repo = new Repo(c.env.DB);
     const body = await c.req.json<{
       taskIds?: Id[];
       railId?: string;
@@ -334,7 +283,8 @@ export function createApi(store: Store) {
 
     const settled: Task[] = [];
     for (const taskId of body.taskIds || []) {
-      const task = loadTask(taskId);
+      const task = await repo.taskById(taskId);
+      if (!task) throw bad('No such chore', 404);
       if (task.posterId !== user.id) throw bad('You can only settle chores you posted', 403);
       if (!canApply('task.settled', task.status)) continue;
 
@@ -342,16 +292,19 @@ export function createApi(store: Store) {
       // a settlement against anything else. Without this a bug or a tampered
       // client could mark chores paid while the money went elsewhere.
       if (!task.doerId) throw bad('That chore has nobody to pay', 409);
-      const expected = payoutAddressFor(task.doerId, task.reward.assetKey);
+      const { chain } = assetOf(task.reward.assetKey);
+      const expected = await repo.payoutAddress(task.doerId, chain);
       if (!expected) {
-        throw bad(nameFor(task.doerId) + ' has not added a wallet address yet', 409);
+        const doer = await repo.userById(task.doerId);
+        throw bad((doer?.displayName ?? 'That person') + ' has not added a wallet address yet', 409);
       }
       if (expected.address !== paidTo) {
         throw bad('That payment did not go to the address on record for this chore', 409);
       }
 
-      append({ ...base(user, task), type: 'task.settled', railId, txHash, paidTo });
-      settled.push(loadTask(taskId));
+      await repo.appendEvent({ ...base(user, task), type: 'task.settled', railId, txHash, paidTo });
+      const updated = await repo.taskById(taskId);
+      if (updated) settled.push(updated);
     }
     return c.json({ settled });
   });
@@ -364,3 +317,5 @@ export function createApi(store: Store) {
 
   return api;
 }
+
+export { projectTask };

@@ -106,9 +106,14 @@ reads well; a broken button does not.
 
 ## Running it
 
+Runs on **Cloudflare Workers with D1**. Local development uses the same runtime
+(`workerd` via `wrangler dev`) and a local SQLite-backed D1, so there is no
+second code path that can drift from production.
+
 ```bash
 npm install
-npm run dev
+npm run db:local     # apply schema.sql to the local D1, once
+npm run dev          # wrangler dev (:8787) + vite (:5173)
 ```
 
 Then open <http://localhost:5173>.
@@ -146,13 +151,38 @@ backend, and the page dies on a MIME type error while every request still shows
 `'^/(t|join)/'`). It never reproduces in production, where the file is bundled
 and that request is never made.
 
-### Environment
+### Deploying
 
-| Variable | Default | Notes |
+```bash
+npx wrangler login
+npx wrangler d1 create chore-circle    # paste the database_id into wrangler.toml
+npm run db:remote                      # apply the schema to the real database
+npm run deploy
+```
+
+Then set `APP_URL` in `wrangler.toml` to the deployed origin and redeploy —
+**Nimiq Pay deeplinks are built from it**, and left as localhost they are
+syntactically valid and useless on a phone.
+
+### Configuration
+
+| Where | Key | Notes |
 |---|---|---|
-| `PORT` | `8787` | |
-| `APP_URL` | `http://localhost:$PORT` | **Must be the real HTTPS origin in production** — Nimiq Pay deeplinks are built from it |
-| `DATA_FILE` | `data/chore-circle.json` | |
+| `wrangler.toml` `[vars]` | `APP_URL` | Must be the real HTTPS origin in production |
+| `wrangler.toml` `[[d1_databases]]` | `database_id` | From `wrangler d1 create` |
+| `wrangler.toml` `[assets]` | `run_worker_first` | Paths the Worker owns. **Add a route here whenever you add one to the Worker**, or the static-asset handler shadows it and silently serves the app shell |
+
+### Two configuration traps, both found the hard way
+
+`src/web/api.ts` is served at `/api.ts` in development, which collides with a
+bare `'/api'` Vite proxy key — it prefix-matches, forwards the module to the
+backend, and the page dies on a MIME type error while every request still shows
+200. The proxy rules in `vite.config.ts` are therefore all anchored.
+
+The Worker's `notFound` handler originally served the app shell so client-side
+routes would survive a refresh. That turned every dead invite link into a 200
+serving the app — the smoke test caught it. The asset handler already does SPA
+fallback, so the Worker returns real 404s.
 
 ---
 
@@ -182,8 +212,8 @@ use and this is what "works" currently means.
 - **Only NIM is proven to settle.** USDT is modelled throughout — assets carry their chain
   and decimals — but `sendPayment` deliberately throws for ERC-20 rather than
   failing quietly.
-- **`JsonStore` rewrites a whole file per mutation.** Correct and dependency-free
-  for a circle of friends; swap the `Store` interface for Postgres to scale.
+- **Task visibility is computed by replaying events per request.** Fine at this
+  size; a projection table is the next step if a circle ever gets large.
 - **Untested inside real Nimiq Pay.** Verified against the mock provider only.
 
 ## Before submitting
