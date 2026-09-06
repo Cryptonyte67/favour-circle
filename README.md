@@ -3,6 +3,8 @@
 Post a favour to your **family**, **friends** or **neighbours**. They do it,
 you approve, they get paid — straight to their wallet, in one tap.
 
+Live at **<https://app.favour-circle.workers.dev>**
+
 A Mini App for [Nimiq Pay](https://nimiq.dev/mini-apps/).
 
 ---

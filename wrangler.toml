@@ -1,4 +1,7 @@
-name = "favour-circle"
+# The workers.dev URL is <name>.<account subdomain>.workers.dev, so naming the
+# Worker "app" against the favour-circle subdomain gives app.favour-circle.workers.dev
+# rather than the doubled favour-circle.favour-circle.workers.dev.
+name = "app"
 main = "src/worker/index.ts"
 compatibility_date = "2026-09-06"
 
@@ -20,7 +23,7 @@ database_id = "b2237967-83bd-458e-bed2-3ddeb2ff893a"
 [vars]
 # Overridden per environment. Must be the real public origin in production,
 # because Nimiq Pay deeplinks are built from it.
-APP_URL = "https://favour-circle.favour-circle.workers.dev"
+APP_URL = "https://app.favour-circle.workers.dev"
 
 [dev]
 port = 8787
