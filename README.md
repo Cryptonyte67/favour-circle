@@ -218,8 +218,18 @@ use and this is what "works" currently means.
 
 ## Before submitting
 
-- [ ] Test in real Nimiq Pay on a real phone — `navigator.share`,
-      `navigator.clipboard`, an `sms:` link, and whether external links open
+- [ ] **Submit the app for listing.** Nimiq Pay does not appear to embed an
+      unlisted mini app — it opens it in the browser instead, so no wallet is
+      injected and the payment path cannot be exercised. This blocks everything
+      below it.
+- [ ] Run the in-app diagnostics inside Nimiq Pay once listed. The banner must
+      read green; a report without `ranInsideApp` and a non-Safari user agent
+      did not measure the app's own context.
+- [ ] **Remove the diagnostics endpoints before submitting.** `POST /api/diag`
+      and `GET /diag/results` are unauthenticated by design — anyone can post
+      to them. They exist only to get a capability report off a phone that
+      cannot paste. Delete both routes, the `diagnostics` table, and the
+      footer link once the wallet run is done.
 - [ ] Verify signatures server-side
 - [ ] Deploy to HTTPS and set `APP_URL`
 - [ ] Public GitHub repo, MIT (already licensed)
