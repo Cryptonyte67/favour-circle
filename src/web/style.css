@@ -352,3 +352,17 @@ textarea { min-height: 76px; resize: vertical; }
 .tab-circles.on::after { background: var(--friends); }
 .tab-owed.on { color: var(--community); }
 .tab-owed.on::after { background: var(--community); }
+
+/* The message itself, shown before it is sent. Quoted rather than styled as a
+   control, so it reads as text a person will receive. */
+.share-preview {
+  margin: 6px 0 0;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
