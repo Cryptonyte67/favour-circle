@@ -241,6 +241,64 @@ last did.</p>
 <a href="https://github.com/Cryptonyte67/favour-circle">github.com/Cryptonyte67/favour-circle</a>.</p>
 `;
 
+/**
+ * Written before the shared shell existed, so it had its own styling and no
+ * way back to anything. Moving it here gives it the same nav as the other
+ * documents: nobody should land on an explainer and be stuck there.
+ */
+const CASH_OUT = `
+<h1>Getting paid in crypto</h1>
+<p class="lede">What it is, and what you can actually do with it. No jargon.</p>
+
+<h2>What you are being paid in</h2>
+<div class="card">
+<p><strong>USDT</strong> is a "stablecoin". It is designed to always be worth about
+one US dollar. 10 USDT is roughly 10 dollars' worth, today and next month.</p>
+<p><strong>NIM</strong> is Nimiq's own coin. Its value moves up and down, so 100 NIM
+may be worth more or less next week than it is today.</p>
+</div>
+
+<h2>You have three options</h2>
+<p><strong>1. Keep it.</strong> It stays in your Nimiq Pay wallet. You do not have to
+do anything with it.</p>
+<p><strong>2. Spend it.</strong> Nimiq Pay is built for paying people and merchants who
+accept it. This is the simplest option and costs you the least.</p>
+<p><strong>3. Convert it to your own currency.</strong> This is the fiddly one, and it is
+worth knowing why before you count on it.</p>
+
+<h2>Converting to normal money</h2>
+<p>Nimiq Pay is a payments app. <strong>It cannot turn your balance into cash for
+you</strong>, and neither can Favour. To convert, you use a separate
+service, usually a crypto exchange, which typically means:</p>
+<ul>
+  <li>Creating an account and <strong>verifying your identity</strong> with a photo ID</li>
+  <li>Sending your USDT or NIM from Nimiq Pay to that account</li>
+  <li>Selling it for your currency</li>
+  <li>Withdrawing to your bank account or mobile wallet</li>
+</ul>
+<p>Every one of those steps can charge a fee, and there is often a minimum
+withdrawal amount.</p>
+
+<div class="flag">
+<p><strong>Small amounts often are not worth converting.</strong> If you earned the
+equivalent of a few dollars doing favours, fees and minimums can eat most of it.
+Spending it or letting it build up first usually makes more sense.</p>
+</div>
+
+<h2>What is available depends on where you live</h2>
+<p>Which services work, what they charge, and what is legally permitted vary a
+lot by country. We deliberately do not recommend a particular service here,
+because we cannot know what is available or appropriate where you are.</p>
+<p>Nimiq runs its own service called <strong>OASIS</strong> for swapping directly with a bank
+account. Two limits worth knowing: it covers <strong>NIM and BTC, not USDT</strong>, and it
+needs a euro bank account supporting SEPA Instant, so it is Europe-focused.</p>
+
+<h2>Before you accept a favour</h2>
+<p>If being able to convert to cash easily matters to you, check what is available
+in your country <em>first</em>. Agreeing to do something for crypto you cannot
+readily spend or convert is a bad trade, however good the rate looks.</p>
+`;
+
 export function createDocs() {
   const docs = new Hono<{ Bindings: Env }>();
 
@@ -250,6 +308,16 @@ export function createDocs() {
 
   docs.get('/terms', (c) =>
     c.html(page('Terms of use', 'What Favour is, what it is not, and what it stores.', TERMS)),
+  );
+
+  docs.get('/help/cash-out', (c) =>
+    c.html(
+      page(
+        'Getting paid in crypto',
+        'What you are being paid in, and what you can actually do with it.',
+        CASH_OUT,
+      ),
+    ),
   );
 
   return docs;

@@ -718,6 +718,17 @@ function postFavourSheet() {
 function renderCircles(): HTMLElement {
   const wrap = el('div', {});
 
+  // Actions first. They used to sit under the list, which put the only two
+  // things you can do on this screen below the fold as soon as you had a few
+  // circles, and further down with every one you added.
+  const actions = el('div', { class: 'card' });
+  const create = el('button', { class: 'primary' }, 'Create a circle');
+  create.onclick = createCircleSheet;
+  const join = el('button', { class: 'ghost' }, 'Join with a code');
+  join.onclick = joinCircleSheet;
+  actions.append(create, join);
+  wrap.append(actions);
+
   for (const circle of state.circles) {
     const card = el('div', { class: 'card' });
     card.append(
@@ -737,17 +748,9 @@ function renderCircles(): HTMLElement {
 
   if (state.circles.length === 0) {
     wrap.append(
-      el('div', { class: 'card center' }, el('p', { class: 'muted' }, 'You are not in any circles yet.')),
+      el('div', { class: 'card center' }, el('p', { class: 'muted' }, 'No circles yet. Create one above, or join with a code.')),
     );
   }
-
-  const actions = el('div', { class: 'card' });
-  const create = el('button', { class: 'primary' }, 'Create a circle');
-  create.onclick = createCircleSheet;
-  const join = el('button', { class: 'ghost' }, 'Join with a code');
-  join.onclick = joinCircleSheet;
-  actions.append(create, join);
-  wrap.append(actions);
 
   return wrap;
 }
