@@ -522,12 +522,23 @@ function renderFavours(): HTMLElement {
   if (hero) wrap.append(hero);
 
   if (state.circles.length === 0) {
-    wrap.append(
-      el('div', { class: 'card center' },
-        el('h3', {}, 'No circles yet'),
-        el('p', { class: 'muted' }, 'Create one, or join with a code, before posting a favour.'),
+    // An empty state that only describes what to do is a dead end. This is the
+    // first screen after signing up, and the only two useful actions live on
+    // another tab, so they belong here as buttons rather than as instructions.
+    const empty = el('div', { class: 'card center' },
+      el('h3', {}, 'No circles yet'),
+      el(
+        'p',
+        { class: 'muted' },
+        'A circle is the group a favour gets posted to. Create one, or join with a code someone gave you.',
       ),
     );
+    const create = el('button', { class: 'primary' }, 'Create a circle');
+    create.onclick = createCircleSheet;
+    const join = el('button', { class: 'ghost' }, 'Join with a code');
+    join.onclick = joinCircleSheet;
+    empty.append(create, join);
+    wrap.append(empty);
     return wrap;
   }
 
