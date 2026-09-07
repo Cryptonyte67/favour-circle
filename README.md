@@ -229,11 +229,12 @@ use and this is what "works" currently means.
 - [ ] Run the in-app diagnostics inside Nimiq Pay once listed. The banner must
       read green; a report without `ranInsideApp` and a non-Safari user agent
       did not measure the app's own context.
-- [ ] **Remove the diagnostics endpoints before submitting.** `POST /api/diag`
-      and `GET /diag/results` are unauthenticated by design — anyone can post
-      to them. They exist only to get a capability report off a phone that
-      cannot paste. Delete both routes, the `diagnostics` table, and the
-      footer link once the wallet run is done.
+- [x] ~~Remove the diagnostics endpoints before submitting.~~ Done. `POST
+      /api/diag` and `/diag/results` are gone, along with the `diagnostics`
+      table. The probe still runs, but it only draws its report on screen:
+      screenshot it. Sending it needed a public unauthenticated write endpoint,
+      which has no business in a deployed app for the sake of saving a
+      screenshot.
 - [ ] Verify signatures server-side
 - [ ] Deploy to HTTPS and set `APP_URL`
 - [ ] Public GitHub repo, MIT (already licensed)

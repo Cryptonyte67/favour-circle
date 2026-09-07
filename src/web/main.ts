@@ -39,7 +39,6 @@ import {
   probePriceApi,
   probeShare,
   probeWallet,
-  sendReport,
   walletDetected,
   type DiagnosticsReport,
 } from './diagnostics.js';
@@ -286,14 +285,13 @@ function diagnosticsSheet() {
   run('Clipboard', 'clipboard', probeClipboard);
   run('Share sheet', 'share', probeShare);
 
-  const status = el('p', { class: 'muted small' }, '');
-  const send = el('button', { class: 'primary' }, 'Send to my computer');
-  send.onclick = async () => {
-    status.textContent = 'Sending…';
-    status.textContent = await sendReport(report);
-  };
-
-  body.append(send, status, out);
+  // The report is shown, not transmitted. Sending it needed a public,
+  // unauthenticated write endpoint, which has no business in a deployed app
+  // for the sake of saving a screenshot.
+  body.append(
+    el('p', { class: 'note' }, 'Screenshot this and send it on. Nothing is uploaded.'),
+    out,
+  );
   openSheet('Diagnostics', body);
 }
 
@@ -947,7 +945,7 @@ function shareSheet(title: string, url: string, message: string) {
     // A genuine anchor, not a scripted navigation. WKWebView blocks
     // location.href to non-http schemes but honours a tapped link — which is
     // why the same sms: URL works on the /diag page and did not here.
-    const sms = el('a', { class: 'button ghost', href: smsHref(message) }, 'Send as a text');
+    const sms = el('a', { class: 'button ghost', href: smsHref(message) }, 'Text it');
     sms.addEventListener('click', () => {
       void watchSmsHandoff().then((opened) => {
         if (!opened) {

@@ -144,16 +144,3 @@ export async function probeShare(): Promise<string> {
     return (err as Error).name + ': ' + (err as Error).message;
   }
 }
-
-export async function sendReport(report: DiagnosticsReport): Promise<string> {
-  try {
-    const res = await fetch('/api/diag', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(report),
-    });
-    return res.ok ? 'Sent. Open /diag/results on your computer.' : 'Failed: HTTP ' + res.status;
-  } catch (err) {
-    return 'Failed: ' + (err as Error).message;
-  }
-}

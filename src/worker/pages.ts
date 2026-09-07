@@ -184,48 +184,6 @@ approved, get paid straight to your wallet.</p>
   });
 
   /**
-   * Diagnostics runs, newest first — read this on a desktop.
-   *
-   * The phone cannot easily paste out of a WebView, so it posts its report here
-   * and the results are collected on a machine that can copy. Development aid;
-   * remove alongside POST /api/diag before production.
-   */
-  pages.get('/diag/results', async (c) => {
-    const rows = await c.env.DB.prepare(
-      'SELECT id, at, payload FROM diagnostics ORDER BY at DESC LIMIT 10',
-    ).all<{ id: string; at: number; payload: string }>();
-
-    const blocks = rows.results.length
-      ? rows.results
-          .map((r) => {
-            let pretty = r.payload;
-            try { pretty = JSON.stringify(JSON.parse(r.payload), null, 2); } catch { /* raw */ }
-            const when = new Date(r.at).toISOString().replace('T', ' ').slice(0, 19);
-            return '<h2>' + when + ' UTC</h2><pre>' + pretty.replace(/</g, '&lt;') + '</pre>';
-          })
-          .join('')
-      : '<p>Nothing received yet. Run the diagnostics on your phone and tap ' +
-        '<b>Send to my computer</b>.</p>';
-
-    return c.html([
-      '<!doctype html><html lang="en"><head><meta charset="utf-8">',
-      '<meta name="viewport" content="width=device-width, initial-scale=1">',
-      '<title>Diagnostics results</title>',
-      '<style>',
-      ':root{color-scheme:light dark}',
-      'body{margin:0;padding:24px;font:15px/1.5 system-ui,-apple-system,sans-serif;max-width:780px}',
-      'h1{font-size:20px;margin:0 0 4px}',
-      'h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;opacity:.55;margin:26px 0 6px}',
-      'pre{background:rgba(128,128,128,.12);padding:14px;border-radius:10px;overflow-x:auto;font-size:12.5px}',
-      '</style></head><body>',
-      '<h1>Diagnostics results</h1>',
-      '<p style="opacity:.65;margin:0 0 8px">Newest first. Select a block and copy it.</p>',
-      blocks,
-      '</body></html>',
-    ].join(''));
-  });
-
-  /**
    * Launcher, for opening this app inside Nimiq Pay during development.
    *
    * The documented HTTPS deeplink (nimpay.app/miniapps/open/...) is an iOS
@@ -264,10 +222,13 @@ approved, get paid straight to your wallet.</p>
       '</style></head><body><div class="w">',
       '<h1>Open Favour in Nimiq Pay</h1>',
       '<p>Needs Nimiq Pay installed on this device. Without it you will be sent',
-      'to the App Store. That is the intended fallback, not an error.</p>',
+      'to the App Store, which is the intended fallback rather than an error.</p>',
+      '<p>If the first button does nothing, try the second. They use two different',
+      'ways of handing the link to the app, and phones vary in which one they',
+      'honour.</p>',
       '<a class="primary" href="' + universal + '">Open in Nimiq Pay</a>',
-      '<a class="ghost" href="' + scheme + '">Try nimiqpay:// scheme</a>',
-      '<a class="ghost" href="/diag">Diagnostics in this browser (no wallet)</a>',
+      '<a class="ghost" href="' + scheme + '">Try another way to open it</a>',
+      '<a class="ghost" href="/diag">Open diagnostics here instead (no wallet)</a>',
       '<code>' + host + '</code>',
       '</div></body></html>',
     ].join(''));
@@ -426,8 +387,7 @@ converts or has access to your money. Payments go straight between wallets.</p>
 <h2>Results</h2>
 <pre id="log">(nothing yet)</pre>
 <button id="b-copy">Copy results</button>
-<button id="b-send">Send to my computer</button>
-<p id="sent" style="opacity:.7;font-size:13px"></p>
+
 
 <script>
 var results = {};
@@ -552,16 +512,6 @@ document.getElementById('b-sign').onclick = function(){
     }).then(function(s){ set('signature', { via:'ethereum', value: String(s).slice(0,300) }); })
       .catch(function(e){ set('signature','ERR ' + e.message); });
   } else { set('signature','no signing method'); }
-};
-document.getElementById('b-send').onclick = function(){
-  var el = document.getElementById('sent');
-  el.textContent = 'Sending...';
-  fetch('/api/diag', { method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(results) })
-    .then(function(r){ el.textContent = r.ok
-      ? 'Sent. Open /diag/results on your computer.'
-      : 'Failed: HTTP ' + r.status; })
-    .catch(function(e){ el.textContent = 'Failed: ' + e.message; });
 };
 document.getElementById('b-copy').onclick = function(){
   var text = JSON.stringify(results,null,2);
