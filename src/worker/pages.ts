@@ -149,6 +149,7 @@ export function createPages() {
           ${open
             ? html`<a class="cta" href="${deeplink}">Open in Nimiq Pay to accept</a>
                    <span class="alt">You will need Nimiq Pay and a wallet to get paid.</span>
+                   <span class="alt"><a href="https://youtube.com/shorts/5uc5DPpibqE" target="_blank" rel="noopener">Watch how it works (30 seconds)</a></span>
                    <span class="alt"><a href="/help/cash-out">New to crypto? What this pays you in</a></span>`
             : html`<span class="alt">This favour is no longer open.</span>`}
         `,

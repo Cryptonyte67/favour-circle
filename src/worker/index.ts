@@ -10,12 +10,14 @@
 
 import { Hono } from 'hono';
 import { createApi, type Env } from './api.js';
+import { createDocs } from './docs.js';
 import { createPages } from './pages.js';
 
 const app = new Hono<{ Bindings: Env }>();
 
 app.get('/healthz', (c) => c.json({ ok: true }));
 app.route('/api', createApi());
+app.route('/', createDocs());
 app.route('/', createPages());
 
 // The Worker is only reached for the paths listed in run_worker_first, so an

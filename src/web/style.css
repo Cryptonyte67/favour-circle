@@ -49,7 +49,9 @@ body {
 #app {
   max-width: 480px;
   margin: 0 auto;
-  padding: 16px 16px 96px;
+  /* Clear the notch or dynamic island. Inside Nimiq Pay the WebView reports a
+     real inset; in a desktop browser it is zero and the 16px floor applies. */
+  padding: max(16px, env(safe-area-inset-top)) 16px 96px;
 }
 
 header {
@@ -365,4 +367,18 @@ textarea { min-height: 76px; resize: vertical; }
   font-size: 14px;
   line-height: 1.5;
   word-break: break-word;
+}
+
+/* A link, deliberately not a primary button: watching the video is optional and
+   should not compete with getting started. */
+.watch {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
 }

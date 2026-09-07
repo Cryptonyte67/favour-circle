@@ -28,7 +28,7 @@ export default defineConfig({
         target: 'http://localhost:8787',
         changeOrigin: false,
       },
-      '^/help/': {
+      '^/(help|terms)': {
         target: 'http://localhost:8787',
         changeOrigin: false,
       },

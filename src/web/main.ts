@@ -78,6 +78,8 @@ const state: State = {
 let wallet: WalletProvider;
 let rails: PayoutRail[];
 
+const VIDEO_URL = 'https://youtube.com/shorts/5uc5DPpibqE';
+
 const root = document.getElementById('app') as HTMLElement;
 const origin = location.origin;
 
@@ -196,11 +198,11 @@ function appFooter(): HTMLElement {
   return el(
     'footer',
     { class: 'app-footer muted small center' },
-    el(
-      'a',
-      { href: '/help/cash-out', class: 'muted' },
-      'New to crypto? What your earnings are and what to do with them',
-    ),
+    el('a', { href: '/help', class: 'muted' }, 'How it works'),
+    el('span', { class: 'sep' }, ' · '),
+    el('a', { href: '/help/cash-out', class: 'muted' }, 'New to crypto?'),
+    el('span', { class: 'sep' }, ' · '),
+    el('a', { href: '/terms', class: 'muted' }, 'Terms'),
     // Also on the onboarding screen, but that is only ever seen once. Anyone
     // already signed in had no way to reach diagnostics from inside the app,
     // which is exactly the context the wallet checks need to run in.
@@ -332,6 +334,17 @@ function renderOnboarding(): HTMLElement {
       ),
     );
   }
+
+  // A link, not an embed. A YouTube iframe would load their whole player on
+  // every first run, which is heavier than the entire app and would be the
+  // slowest thing on the page for the sake of a thumbnail.
+  wrap.append(
+    el(
+      'a',
+      { class: 'watch', href: VIDEO_URL, target: '_blank', rel: 'noopener' },
+      'Watch how it works (30 seconds)',
+    ),
+  );
 
   if (diagnosticsEnabled()) {
     wrap.append(
@@ -757,7 +770,19 @@ function renderOwed(): HTMLElement {
     card.append(
       el('div', { class: 'row' },
         el('h3', {}, nameOf(bucket.doerId)),
-        el('span', { class: 'reward' }, formatUnits(bucket.assetKey, bucket.units) + ' ' + (ASSETS[bucket.assetKey]?.symbol ?? '')),
+        // Show what this costs in the viewer's own money as well. Nobody should
+        // have to convert in their head immediately before paying.
+        el('div', { class: 'reward-box' },
+          el(
+            'span',
+            { class: 'reward' },
+            formatUnits(bucket.assetKey, bucket.units) + ' ' + (ASSETS[bucket.assetKey]?.symbol ?? ''),
+          ),
+          ...(() => {
+            const fiat = approxFiat(bucket.assetKey, bucket.units, state.currency);
+            return fiat ? [el('span', { class: 'muted small fiat' }, fiat)] : [];
+          })(),
+        ),
       ),
       el('p', { class: 'muted small' }, bucket.taskIds.length + ' approved favour' + (bucket.taskIds.length === 1 ? '' : 's')),
     );
