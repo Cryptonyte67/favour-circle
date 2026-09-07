@@ -51,7 +51,7 @@ body {
   margin: 0 auto;
   /* Clear the notch or dynamic island. Inside Nimiq Pay the WebView reports a
      real inset; in a desktop browser it is zero and the 16px floor applies. */
-  padding: max(16px, env(safe-area-inset-top)) 16px 96px;
+  padding: max(16px, env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom));
 }
 
 header {
@@ -122,16 +122,31 @@ button:disabled { opacity: .5; cursor: default; }
 .actions { display: flex; gap: 8px; }
 .actions button { margin-top: 12px; }
 
-.tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+/* Fixed to the bottom, where a thumb reaches. The active indicator sits on the
+   top edge of the tab rather than under the label, because an underline at the
+   very bottom of the screen reads as part of the phone, not the app. */
+.tabs {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 40;
+  display: flex;
+  gap: 0;
+  margin: 0;
+  padding: 0 8px env(safe-area-inset-bottom);
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
 .tab {
+  flex: 1;
   margin-top: 0;
   background: transparent;
   border-color: transparent;
   color: var(--muted);
-  min-height: 40px;
-  padding: 8px;
+  min-height: 56px;
+  padding: 8px 4px;
+  font-size: 14px;
 }
-.tab.on { background: var(--card); border-color: var(--line); color: var(--ink); }
+.tab.on { background: transparent; border-color: transparent; color: var(--ink); }
 
 .filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
 .chip {
@@ -211,7 +226,7 @@ textarea { min-height: 76px; resize: vertical; }
 .fab {
   position: fixed;
   right: max(16px, calc(50vw - 240px + 16px));
-  bottom: 24px;
+  bottom: calc(84px + env(safe-area-inset-bottom));
   width: 56px;
   height: 56px;
   min-height: 56px;
@@ -344,9 +359,9 @@ textarea { min-height: 76px; resize: vertical; }
   position: absolute;
   left: 14%;
   right: 14%;
-  bottom: 4px;
+  top: 0;
   height: 3px;
-  border-radius: 2px;
+  border-radius: 0 0 2px 2px;
 }
 .tab-favours.on { color: var(--family); }
 .tab-favours.on::after { background: var(--family); }
@@ -418,3 +433,25 @@ textarea { min-height: 76px; resize: vertical; }
   align-items: center;
   justify-content: center;
 }
+
+/* The logo doubles as the way back to the list. Styled to look like a wordmark,
+   not a control, so it does not compete with anything on the screen. */
+.brand-home {
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* What you owe, promoted to the main screen. Tinted rather than outlined so it
+   reads as the one thing asking for attention. */
+.card.hero {
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--card));
+}
+.card.hero h3 { margin-top: 0; }

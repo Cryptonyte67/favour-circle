@@ -469,8 +469,57 @@ function taskCard(task: Task): HTMLElement {
   return card;
 }
 
+/**
+ * What you owe, on the screen people actually look at.
+ *
+ * It was only visible behind the Owed tab, which meant the one thing in the app
+ * that needs acting on was the one thing you had to go looking for.
+ */
+function owedHero(): HTMLElement | null {
+  const mine = (state.tasks?.owed ?? []).filter((b) => b.posterId === state.userId);
+  if (mine.length === 0) return null;
+
+  const card = el('div', { class: 'card hero' });
+  const go = el('button', { class: 'primary' }, 'Settle up');
+  go.onclick = () => {
+    state.tab = 'owed';
+    render();
+  };
+
+  if (mine.length === 1) {
+    const only = mine[0]!;
+    const symbol = ASSETS[only.assetKey]?.symbol ?? '';
+    const fiat = approxFiat(only.assetKey, only.units, state.currency);
+    card.append(
+      el('div', { class: 'row' },
+        el('h3', {}, 'You owe ' + nameOf(only.doerId)),
+        el('div', { class: 'reward-box' },
+          el('span', { class: 'reward' }, formatUnits(only.assetKey, only.units) + ' ' + symbol),
+          ...(fiat ? [el('span', { class: 'muted small fiat' }, fiat)] : []),
+        ),
+      ),
+      el(
+        'p',
+        { class: 'muted small' },
+        only.taskIds.length + ' approved favour' + (only.taskIds.length === 1 ? '' : 's'),
+      ),
+    );
+  } else {
+    card.append(
+      el('h3', {}, mine.length + ' people waiting to be paid'),
+      el('p', { class: 'muted small' }, 'Approved favours, not yet settled.'),
+    );
+  }
+
+  card.append(go);
+  return card;
+}
+
 function renderFavours(): HTMLElement {
   const wrap = el('div', {});
+
+  const hero = owedHero();
+  if (hero) wrap.append(hero);
 
   if (state.circles.length === 0) {
     wrap.append(
@@ -1053,8 +1102,19 @@ function render() {
     render();
   };
 
+  // The mark is the way back to the main list, which is what people expect a
+  // logo to do. A button rather than a link: it changes a tab, it does not
+  // navigate anywhere.
+  const brand = el('button', { class: 'brand brand-home', 'aria-label': 'Go to favours' });
+  brand.append(logoElement(24), el('h1', {}, 'Favour'));
+  brand.onclick = () => {
+    state.tab = 'favours';
+    state.filter = 'all';
+    render();
+  };
+
   const header = el('header', {},
-    el('div', { class: 'brand' }, logoElement(24), el('h1', {}, 'Favour')),
+    brand,
     el('div', { class: 'row', style: 'gap:10px' },
       el('span', { class: 'muted small' }, wallet.isReal ? 'Nimiq Pay' : 'Mock wallet'),
       currencySelect,
@@ -1084,7 +1144,6 @@ function render() {
     };
     tabs.append(tab);
   }
-  root.append(tabs);
 
   const main = el('main', {});
   const prompt = walletPrompt();
@@ -1101,6 +1160,10 @@ function render() {
   }
 
   root.append(appFooter());
+
+  // Last in the DOM as well as at the bottom of the screen, so tab order runs
+  // through the content before reaching navigation.
+  root.append(tabs);
 
   if (state.busy) root.append(el('div', { class: 'busy' }));
 }
