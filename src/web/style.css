@@ -382,3 +382,7 @@ textarea { min-height: 76px; resize: vertical; }
   font-size: 14px;
   font-weight: 600;
 }
+
+/* Four links will not sit on one line on a narrow phone, so let them wrap
+   rather than overflow, and give the separators room to breathe. */
+.app-footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 2px; }

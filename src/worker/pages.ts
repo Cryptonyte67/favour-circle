@@ -176,6 +176,7 @@ export function createPages() {
 approved, get paid straight to your wallet.</p>
           <hr>
           <a class="cta" href="${deeplink}">Open in Nimiq Pay</a>
+          <span class="alt"><a href="https://youtube.com/shorts/5uc5DPpibqE" target="_blank" rel="noopener">Watch how it works (30 seconds)</a></span>
           <span class="alt">Invite code: <strong>${circle.inviteCode}</strong></span>
         `,
       }),

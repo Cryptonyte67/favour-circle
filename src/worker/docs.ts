@@ -46,6 +46,11 @@ const STYLE = `
              font-size:14px; color:var(--muted); }
   nav.docs a { color:inherit; }
   a { color:inherit; }
+  .watch {
+    display:inline-block; margin:6px 0 0; padding:11px 18px;
+    border:1px solid var(--line); border-radius:999px;
+    text-decoration:none; font-size:15px; font-weight:600; color:var(--ink);
+  }
 `;
 
 function page(title: string, description: string, body: string): string {
@@ -61,6 +66,7 @@ function page(title: string, description: string, body: string): string {
     '<nav class="docs">',
     '<a href="/">Open Favour</a> &middot; ',
     '<a href="/help">How it works</a> &middot; ',
+    '<a href="https://youtube.com/shorts/5uc5DPpibqE" target="_blank" rel="noopener">Video</a> &middot; ',
     '<a href="/help/cash-out">New to crypto?</a> &middot; ',
     '<a href="/terms">Terms</a>',
     '</nav>',
@@ -71,6 +77,8 @@ function page(title: string, description: string, body: string): string {
 const HOW_IT_WORKS = `
 <h1>How Favour works</h1>
 <p class="lede">Three screens. Here is what each one does.</p>
+
+<p><a class="watch" href="https://youtube.com/shorts/5uc5DPpibqE" target="_blank" rel="noopener">Watch the 30 second demo</a></p>
 
 <p>The whole app is one loop: someone posts a favour, someone else does it, the
 person who posted it approves, and the money moves. Nothing happens until the

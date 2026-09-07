@@ -200,6 +200,12 @@ function appFooter(): HTMLElement {
     { class: 'app-footer muted small center' },
     el('a', { href: '/help', class: 'muted' }, 'How it works'),
     el('span', { class: 'sep' }, ' · '),
+    el(
+      'a',
+      { href: VIDEO_URL, class: 'muted', target: '_blank', rel: 'noopener' },
+      'Video',
+    ),
+    el('span', { class: 'sep' }, ' · '),
     el('a', { href: '/help/cash-out', class: 'muted' }, 'New to crypto?'),
     el('span', { class: 'sep' }, ' · '),
     el('a', { href: '/terms', class: 'muted' }, 'Terms'),
@@ -952,6 +958,16 @@ function shareSheet(title: string, url: string, message: string) {
     });
     buttons.append(sms);
   }
+
+  // The invite sheet is where you are usually stood next to the person you are
+  // trying to explain this to. Playing them thirty seconds is easier than
+  // describing it, so the video belongs here rather than only in a help menu.
+  const show = el(
+    'a',
+    { class: 'button ghost', href: VIDEO_URL, target: '_blank', rel: 'noopener' },
+    'Show them the 30 second video',
+  );
+  buttons.append(show);
 
   body.append(buttons);
 
