@@ -386,3 +386,35 @@ textarea { min-height: 76px; resize: vertical; }
 /* Four links will not sit on one line on a narrow phone, so let them wrap
    rather than overflow, and give the separators room to breathe. */
 .app-footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 2px; }
+
+/* The loop, on the first screen. Left-aligned inside a centred card because
+   numbered steps read as a sequence only when they share a left edge. */
+.card.center .lede { margin-bottom: 4px; }
+.how {
+  list-style: none;
+  margin: 18px 0 4px;
+  padding: 0;
+  text-align: left;
+}
+.how li {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 7px 0;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.how .n {
+  flex: none;
+  width: 23px;
+  height: 23px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -304,10 +304,24 @@ function renderOnboarding(): HTMLElement {
     el('h1', {}, 'Favour'),
     el(
       'p',
-      { class: 'muted' },
-      'Post a favour to your family, friends or neighbours. They do it, you approve, they get paid.',
+      { class: 'muted lede' },
+      'Small jobs between people you know. Paid the moment they are done.',
     ),
   );
+
+  // Someone who has never heard of this needs to understand the loop before
+  // being asked for their name. Three lines is enough, and it is the same loop
+  // the whole app is built on.
+  const steps: [string, string][] = [
+    ['1', 'Post a favour, with a reward on it'],
+    ['2', 'Someone in your circle does it'],
+    ['3', 'You approve. They are paid on the spot'],
+  ];
+  const how = el('ol', { class: 'how' });
+  for (const [n, text] of steps) {
+    how.append(el('li', {}, el('span', { class: 'n' }, n), el('span', {}, text)));
+  }
+  wrap.append(how);
 
   const input = el('input', { placeholder: 'Your name', maxlength: '40' });
   const button = el('button', { class: 'primary' }, 'Get started');
@@ -329,15 +343,6 @@ function renderOnboarding(): HTMLElement {
   submitOnEnter(input, button);
 
   wrap.append(input, button);
-  if (!wallet.isReal) {
-    wrap.append(
-      el(
-        'p',
-        { class: 'note' },
-        'No Nimiq Pay detected, so a mock wallet is in use. Payments are simulated.',
-      ),
-    );
-  }
 
   // A link, not an embed. A YouTube iframe would load their whole player on
   // every first run, which is heavier than the entire app and would be the
@@ -349,6 +354,16 @@ function renderOnboarding(): HTMLElement {
       'Watch how it works (30 seconds)',
     ),
   );
+
+  if (!wallet.isReal) {
+    wrap.append(
+      el(
+        'p',
+        { class: 'note' },
+        'No Nimiq Pay detected, so a mock wallet is in use here and payments are simulated.',
+      ),
+    );
+  }
 
   if (diagnosticsEnabled()) {
     wrap.append(
