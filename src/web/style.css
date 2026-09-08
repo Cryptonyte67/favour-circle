@@ -51,7 +51,7 @@ body {
   margin: 0 auto;
   /* Clear the notch or dynamic island. Inside Nimiq Pay the WebView reports a
      real inset; in a desktop browser it is zero and the 16px floor applies. */
-  padding: max(16px, env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom));
+  padding: max(16px, env(safe-area-inset-top)) 16px 24px;
 }
 
 header {
@@ -122,31 +122,17 @@ button:disabled { opacity: .5; cursor: default; }
 .actions { display: flex; gap: 8px; }
 .actions button { margin-top: 12px; }
 
-/* Fixed to the bottom, where a thumb reaches. The active indicator sits on the
-   top edge of the tab rather than under the label, because an underline at the
-   very bottom of the screen reads as part of the phone, not the app. */
-.tabs {
-  position: fixed;
-  left: 0; right: 0; bottom: 0;
-  z-index: 40;
-  display: flex;
-  gap: 0;
-  margin: 0;
-  padding: 0 8px env(safe-area-inset-bottom);
-  background: var(--card);
-  border-top: 1px solid var(--line);
-}
+.tabs { display: flex; gap: 6px; margin-bottom: 14px; }
 .tab {
   flex: 1;
   margin-top: 0;
   background: transparent;
   border-color: transparent;
   color: var(--muted);
-  min-height: 56px;
-  padding: 8px 4px;
-  font-size: 14px;
+  min-height: 40px;
+  padding: 8px;
 }
-.tab.on { background: transparent; border-color: transparent; color: var(--ink); }
+.tab.on { background: var(--card); border-color: var(--line); color: var(--ink); }
 
 .filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
 .chip {
@@ -226,7 +212,7 @@ textarea { min-height: 76px; resize: vertical; }
 .fab {
   position: fixed;
   right: max(16px, calc(50vw - 240px + 16px));
-  bottom: calc(84px + env(safe-area-inset-bottom));
+  bottom: 24px;
   width: 56px;
   height: 56px;
   min-height: 56px;
@@ -308,7 +294,7 @@ textarea { min-height: 76px; resize: vertical; }
   border-radius:8px;
 }
 
-.app-footer { margin-top: 28px; padding: 0 8px; line-height: 1.5; }
+.app-footer { margin-top: 28px; margin-bottom: 96px; padding: 0 8px; line-height: 1.5; }
 .app-footer a { text-decoration: underline; text-underline-offset: 2px; }
 
 .diag-banner { padding:12px 14px; border-radius:10px; font-weight:650; font-size:14px; color:#fff; }
@@ -359,9 +345,9 @@ textarea { min-height: 76px; resize: vertical; }
   position: absolute;
   left: 14%;
   right: 14%;
-  top: 0;
+  bottom: 4px;
   height: 3px;
-  border-radius: 0 0 2px 2px;
+  border-radius: 2px;
 }
 .tab-favours.on { color: var(--family); }
 .tab-favours.on::after { background: var(--family); }

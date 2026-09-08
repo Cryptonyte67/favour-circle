@@ -1158,6 +1158,7 @@ function render() {
     };
     tabs.append(tab);
   }
+  root.append(tabs);
 
   const main = el('main', {});
   const prompt = walletPrompt();
@@ -1174,10 +1175,6 @@ function render() {
   }
 
   root.append(appFooter());
-
-  // Last in the DOM as well as at the bottom of the screen, so tab order runs
-  // through the content before reaching navigation.
-  root.append(tabs);
 
   if (state.busy) root.append(el('div', { class: 'busy' }));
 }
